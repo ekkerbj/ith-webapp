@@ -9,3 +9,4 @@ F-009: Customer Market Assignment model and relationship implemented, tested, an
 2026-04-19: CustomerTools and CustomerToolsSub models, migrations, and tests implemented and verified for F-011.
 F-008: CustomerApplication and Specs models, migration, and tests implemented and verified.
 2026-04-19: Classification model and test implemented for F-010.
+2026-04-19: CheckInSub model and workflow flags implemented, tested, and prd.json updated.
