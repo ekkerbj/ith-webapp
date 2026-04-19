@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block title %}{{ item.order_number or "Order Confirmation" }} - ITH{% endblock %}
+
+{% block content %}
+<h1>{{ item.order_number or "Order Confirmation" }}</h1>
+
+<p>Customer: {{ item.customer.customer_name }}</p>
+<p>Notes: {{ item.notes or "" }}</p>
+<p>Created At: {{ item.created_at }}</p>
+
+<a href="{{ url_for('order_confirmations.order_confirmation_list') }}">Back to list</a>
+{% endblock %}

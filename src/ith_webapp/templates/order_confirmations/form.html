@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}{{ "Edit" if item else "New" }} Order Confirmation - ITH{% endblock %}
+
+{% block content %}
+<h1>{{ "Edit" if item else "New" }} Order Confirmation</h1>
+
+<form method="post">
+    <label for="customer_id">Customer ID</label>
+    <input type="number" id="customer_id" name="customer_id" value="{{ item.customer_id if item else '' }}" required>
+
+    <label for="order_number">Order Number</label>
+    <input type="text" id="order_number" name="order_number" value="{{ item.order_number if item else '' }}">
+
+    <label for="notes">Notes</label>
+    <textarea id="notes" name="notes">{{ item.notes if item else '' }}</textarea>
+
+    <button type="submit">Save</button>
+</form>
+
+<a href="{{ url_for('order_confirmations.order_confirmation_list') }}">Back to list</a>
+{% endblock %}

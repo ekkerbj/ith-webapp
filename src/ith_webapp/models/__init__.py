@@ -26,6 +26,7 @@ from ith_webapp.models.parts_sold import PartsSold  # noqa: F401
 from ith_webapp.models.rental import Rental  # noqa: F401
 from ith_webapp.models.rental_status import RentalStatus  # noqa: F401
 from ith_webapp.models.project import Project  # noqa: F401
+from ith_webapp.models.order_confirmation import OrderConfirmation  # noqa: F401
 
 __all__ = [
     "Customer",
@@ -53,4 +54,5 @@ __all__ = [
     "Rental",
     "RentalStatus",
     "Project",
+    "OrderConfirmation",
 ]
