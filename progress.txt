@@ -13,3 +13,4 @@ F-008: CustomerApplication and Specs models, migration, and tests implemented an
 13. 2026-04-19: Service model, migration, and test implemented and verified for F-014.
 F-015 ServiceSub model and migration implemented, tested, and verified.
 2026-04-19: ServiceTime model, migration, and test implemented and verified for F-016.
+16. 2026-04-19: ServiceMeasurements model, migration, and test implemented and verified for F-017.
