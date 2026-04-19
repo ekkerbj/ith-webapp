@@ -1,7 +1,7 @@
 # ADR 009: Customer Application and Specs Models
 
 **Date:** 2026-04-19  
-**Status:** Proposed  
+**Status:** Accepted  
 **Authors:** The AI, project team  
 **Drivers:** F-008 (Customer Application and Specs), F-003 (Customer CRUD)  
 **Tags:** model, relationship, customer, application, specs, alembic, SQLAlchemy

@@ -45,3 +45,8 @@ class Customer(Base):
         back_populates="customer",
         cascade="all, delete-orphan"
     )
+    applications = relationship(
+        "CustomerApplication",
+        back_populates="customer",
+        cascade="all, delete-orphan"
+    )
