@@ -38,6 +38,9 @@ def create_app(testing: bool = False) -> Flask:
     from ith_webapp.views.field_service import bp as field_services_bp
     app.register_blueprint(field_services_bp)
 
+    from ith_webapp.views.projects import bp as projects_bp
+    app.register_blueprint(projects_bp)
+
     # Register Packing List Workflow blueprint
     from ith_webapp.views.packing_list_workflow import bp as packing_list_workflow_bp
     app.register_blueprint(packing_list_workflow_bp)

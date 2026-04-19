@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Projects - ITH{% endblock %}
+
+{% block content %}
+<h1>Projects</h1>
+{% if items %}
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Card Code</th>
+            <th>Active</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in items %}
+        <tr>
+            <td><a href="{{ url_for('projects.project_detail', project_id=item.project_id) }}">{{ item.project_name or "" }}</a></td>
+            <td>{{ item.cardcode or "" }}</td>
+            <td>{{ "Yes" if item.active else "No" }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No projects found.</p>
+{% endif %}
+{% endblock %}

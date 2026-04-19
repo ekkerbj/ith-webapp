@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}{{ item.project_name or "Project" }} - ITH{% endblock %}
+
+{% block content %}
+<h1>{{ item.project_name or "Project" }}</h1>
+
+<table>
+    <tr>
+        <th>Customer ID</th>
+        <td>{{ item.customer_id }}</td>
+    </tr>
+    <tr>
+        <th>Card Code</th>
+        <td>{{ item.cardcode or "" }}</td>
+    </tr>
+    <tr>
+        <th>Active</th>
+        <td>{{ "Yes" if item.active else "No" }}</td>
+    </tr>
+</table>
+
+<a href="{{ url_for('projects.project_list') }}">Back to list</a>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}{{ "Edit" if item else "New" }} Project - ITH{% endblock %}
+
+{% block content %}
+<h1>{{ "Edit" if item else "New" }} Project</h1>
+
+<form method="post">
+    <label for="customer_id">Customer ID</label>
+    <input type="number" id="customer_id" name="customer_id" value="{{ item.customer_id if item else '' }}" required>
+
+    <label for="cardcode">Card Code</label>
+    <input type="text" id="cardcode" name="cardcode" value="{{ item.cardcode if item else '' }}">
+
+    <label for="project_name">Project Name</label>
+    <input type="text" id="project_name" name="project_name" value="{{ item.project_name if item else '' }}">
+
+    <label for="active">Active</label>
+    <input type="checkbox" id="active" name="active" {{ 'checked' if item and item.active else '' }}>
+
+    <button type="submit">Save</button>
+</form>
+
+<a href="{{ url_for('projects.project_list') }}">Back to list</a>
+{% endblock %}
