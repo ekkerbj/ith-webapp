@@ -1,22 +1,22 @@
 {% extends "base.html" %}
 
-{% block title %}New Customer - ITH{% endblock %}
+{% block title %}{{ "Edit" if customer else "New" }} Customer - ITH{% endblock %}
 
 {% block content %}
-<h1>New Customer</h1>
+<h1>{{ "Edit" if customer else "New" }} Customer</h1>
 
 <form method="post">
     <label for="customer_name">Customer Name</label>
-    <input type="text" id="customer_name" name="customer_name" required>
+    <input type="text" id="customer_name" name="customer_name" value="{{ customer.customer_name if customer else '' }}" required>
 
     <label for="card_code">Card Code</label>
-    <input type="text" id="card_code" name="card_code">
+    <input type="text" id="card_code" name="card_code" value="{{ customer.card_code if customer else '' }}">
 
     <label for="active">Active</label>
-    <input type="checkbox" id="active" name="active">
+    <input type="checkbox" id="active" name="active" {{ 'checked' if customer and customer.active else '' }}>
 
     <label for="website">Website</label>
-    <input type="url" id="website" name="website">
+    <input type="url" id="website" name="website" value="{{ customer.website if customer else '' }}">
 
     <button type="submit">Save</button>
 </form>

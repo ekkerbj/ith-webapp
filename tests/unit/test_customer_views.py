@@ -114,3 +114,64 @@ def test_customer_create_saves_and_redirects():
     list_response = client.get("/customers/")
     html = list_response.get_data(as_text=True)
     assert "New Corp" in html
+
+
+def test_customer_edit_form_renders_with_existing_data():
+    app = _create_test_app_with_customers(
+        Customer(
+            customer_name="Acme Corp",
+            card_code="C10001",
+            active=True,
+            website="https://acme.example.com",
+        ),
+    )
+    client = app.test_client()
+
+    response = client.get("/customers/1/edit")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert '<form' in html
+    assert 'value="Acme Corp"' in html
+    assert 'value="C10001"' in html
+    assert 'value="https://acme.example.com"' in html
+
+
+def test_customer_edit_form_returns_404_for_missing_customer():
+    app = _create_test_app_with_customers()
+    client = app.test_client()
+
+    response = client.get("/customers/9999/edit")
+
+    assert response.status_code == 404
+
+
+def test_customer_edit_updates_and_redirects():
+    app = _create_test_app_with_customers(
+        Customer(
+            customer_name="Acme Corp",
+            card_code="C10001",
+            active=True,
+        ),
+    )
+    client = app.test_client()
+
+    response = client.post(
+        "/customers/1/edit",
+        data={
+            "customer_name": "Acme Updated",
+            "card_code": "C10001",
+            "active": "on",
+            "website": "https://updated.example.com",
+        },
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 302
+    assert "/customers/1" in response.headers["Location"]
+
+    # Verify updated
+    detail_response = client.get("/customers/1")
+    html = detail_response.get_data(as_text=True)
+    assert "Acme Updated" in html
+    assert "https://updated.example.com" in html
