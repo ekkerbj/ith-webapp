@@ -2,7 +2,7 @@
 
 ## Metadata
 - Date: 2026-04-19
-- Status: Proposed
+- Status: Accepted
 - Authors: The AI
 - Drivers: F-014 Service Header feature, relational integrity, extensibility
 - Tags: service, model, database, SQLAlchemy, architecture
