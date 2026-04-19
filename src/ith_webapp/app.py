@@ -11,6 +11,8 @@ def create_app(testing: bool = False) -> Flask:
         app.config["DATABASE_URL"] = "sqlite:///:memory:"
 
     if "SESSION_FACTORY" not in app.config:
+        import ith_webapp.models  # noqa: F401 — register models with Base
+
         database_url = app.config.get("DATABASE_URL", "sqlite:///ith.db")
         factory = create_session_factory(database_url)
         Base.metadata.create_all(factory().get_bind())
