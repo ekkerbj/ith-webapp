@@ -16,3 +16,13 @@ class ServiceMeasurements(Base):
     torque_wrench_setting: Mapped[float | None] = mapped_column(Float, nullable=True)
 
     service = relationship("Service", backref="measurements")
+
+    def item_sum(self, session):
+        from ith_webapp.models.service_sub import ServiceSub
+        result = session.query(ServiceSub).filter_by(service_id=self.service_id, item_type='I').all()
+        return sum(sub.cost for sub in result)
+
+    def labor_sum(self, session):
+        from ith_webapp.models.service_sub import ServiceSub
+        result = session.query(ServiceSub).filter_by(service_id=self.service_id, item_type='L').all()
+        return sum(sub.cost for sub in result)

@@ -1,4 +1,3 @@
-F-002: Alembic migration setup, initial migration generated and applied, tests passing.
 2026-04-19: Customer CRUD (F-003) verified, tests passing, prd.json updated.
 2026-04-19: Customer delete (F-004) implemented, tested, and prd.json updated.
 F-005 Customer Address Management implemented and tested.
@@ -12,5 +11,6 @@ F-008: CustomerApplication and Specs models, migration, and tests implemented an
 13. 2026-04-19: Service model, migration, and test implemented and verified for F-014.
 F-015 ServiceSub model and migration implemented, tested, and verified.
 2026-04-19: ServiceTime model, migration, and test implemented and verified for F-016.
-16. 2026-04-19: ServiceMeasurements model, migration, and test implemented and verified for F-017.
+16. 2026-04-19: F-020 Quote Calculations (ItemSum, LaborSum) implemented, tested, and prd.json updated.
+2026-04-19: ServiceMeasurements model, migration, and test implemented and verified for F-017.
 2026-04-19: ServiceFlag and ServiceFlagAssignment models, migration, and tests implemented and verified for F-018.
