@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Rental - ITH{% endblock %}
+
+{% block content %}
+<h1>Rental</h1>
+
+<table>
+    <tr>
+        <th>Customer</th>
+        <td>{{ item.customer.customer_name }}</td>
+    </tr>
+    <tr>
+        <th>Tool</th>
+        <td>{{ item.customer_tools.serial_number }}</td>
+    </tr>
+    <tr>
+        <th>Status</th>
+        <td>{{ item.rental_status.name }}</td>
+    </tr>
+    <tr>
+        <th>Rental Date</th>
+        <td>{{ item.rental_date }}</td>
+    </tr>
+    <tr>
+        <th>Return Date</th>
+        <td>{{ item.return_date or "" }}</td>
+    </tr>
+</table>
+
+<a href="{{ url_for('rentals.rental_list') }}">Back to list</a>
+{% endblock %}

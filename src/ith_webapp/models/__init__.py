@@ -10,14 +10,21 @@ from ith_webapp.models.unit import Unit  # noqa: F401
 from ith_webapp.models.customer_application import CustomerApplication, CustomerApplicationSpecs  # noqa: F401
 from ith_webapp.models.check_in import CheckIn, CheckInSub  # noqa: F401
 from ith_webapp.models.service import Service  # noqa: F401
+from ith_webapp.models.field_service import FieldService  # noqa: F401
+from ith_webapp.models.field_service_status import FieldServiceStatus  # noqa: F401
+from ith_webapp.models.field_service_type import FieldServiceType  # noqa: F401
+from ith_webapp.models.field_service_sub import FieldServiceSub  # noqa: F401
 from ith_webapp.models.service_sub import ServiceSub  # noqa: F401
 from ith_webapp.models.service_time import ServiceTime  # noqa: F401
 from ith_webapp.models.service_measurements import ServiceMeasurements  # noqa: F401
 from ith_webapp.models.packing_list_sub import PackingListSub  # noqa: F401
 from ith_webapp.models.packing_list import PackingList  # noqa: F401
 from ith_webapp.models.part import Part  # noqa: F401
+from ith_webapp.models.consignment_list import ConsignmentList  # noqa: F401
 from ith_webapp.models.parts_list import PartsList, PartsSub  # noqa: F401
 from ith_webapp.models.parts_sold import PartsSold  # noqa: F401
+from ith_webapp.models.rental import Rental  # noqa: F401
+from ith_webapp.models.rental_status import RentalStatus  # noqa: F401
 
 __all__ = [
     "Customer",
@@ -31,10 +38,17 @@ __all__ = [
     "CheckIn",
     "CheckInSub",
     "Service",
+    "FieldService",
+    "FieldServiceStatus",
+    "FieldServiceType",
+    "FieldServiceSub",
     "PackingList",
     "PackingListSub",
     "Part",
+    "ConsignmentList",
     "PartsList",
     "PartsSub",
     "PartsSold",
+    "Rental",
+    "RentalStatus",
 ]

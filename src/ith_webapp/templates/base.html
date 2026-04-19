@@ -9,6 +9,9 @@
 <body>
     <nav>
         <a href="{{ url_for('customers.customer_list') }}">Customers</a>
+        <a href="{{ url_for('consignment_list.consignment_list') }}">Consignment Lists</a>
+        <a href="{{ url_for('rentals.rental_list') }}">Rentals</a>
+        <a href="{{ url_for('field_services.field_service_list') }}">Field Services</a>
     </nav>
     <main>
         {% block content %}{% endblock %}

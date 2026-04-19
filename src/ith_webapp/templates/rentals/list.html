@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Rentals - ITH{% endblock %}
+
+{% block content %}
+<h1>Rentals</h1>
+{% if items %}
+<table>
+    <thead>
+        <tr>
+            <th>Customer</th>
+            <th>Tool</th>
+            <th>Status</th>
+            <th>Rental Date</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in items %}
+        <tr>
+            <td><a href="{{ url_for('rentals.rental_detail', rental_id=item.rental_id) }}">{{ item.customer.customer_name }}</a></td>
+            <td>{{ item.customer_tools.serial_number }}</td>
+            <td>{{ item.rental_status.name }}</td>
+            <td>{{ item.rental_date }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No rentals found.</p>
+{% endif %}
+{% endblock %}
