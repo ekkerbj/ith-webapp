@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}{{ customer.customer_name }} - ITH{% endblock %}
+
+{% block content %}
+<h1>{{ customer.customer_name }}</h1>
+
+<table>
+    <tr>
+        <th>Card Code</th>
+        <td>{{ customer.card_code or "" }}</td>
+    </tr>
+    <tr>
+        <th>Active</th>
+        <td>{{ "Yes" if customer.active else "No" }}</td>
+    </tr>
+    <tr>
+        <th>Website</th>
+        <td>{{ customer.website or "" }}</td>
+    </tr>
+    <tr>
+        <th>Comments</th>
+        <td>{{ customer.comments or "" }}</td>
+    </tr>
+    <tr>
+        <th>Multiplier</th>
+        <td>{{ customer.multiplier or "" }}</td>
+    </tr>
+    <tr>
+        <th>Calibration Interval</th>
+        <td>{{ customer.calibration_interval or "" }}</td>
+    </tr>
+</table>
+
+<a href="{{ url_for('customers.customer_list') }}">Back to list</a>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}New Customer - ITH{% endblock %}
+
+{% block content %}
+<h1>New Customer</h1>
+
+<form method="post">
+    <label for="customer_name">Customer Name</label>
+    <input type="text" id="customer_name" name="customer_name" required>
+
+    <label for="card_code">Card Code</label>
+    <input type="text" id="card_code" name="card_code">
+
+    <label for="active">Active</label>
+    <input type="checkbox" id="active" name="active">
+
+    <label for="website">Website</label>
+    <input type="url" id="website" name="website">
+
+    <button type="submit">Save</button>
+</form>
+
+<a href="{{ url_for('customers.customer_list') }}">Back to list</a>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Customers - ITH{% endblock %}
+
+{% block content %}
+<h1>Customers</h1>
+{% if customers %}
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Card Code</th>
+            <th>Active</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for c in customers %}
+        <tr>
+            <td><a href="{{ url_for('customers.customer_detail', customer_id=c.customer_id) }}">{{ c.customer_name }}</a></td>
+            <td>{{ c.card_code or "" }}</td>
+            <td>{{ "Yes" if c.active else "No" }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No customers found.</p>
+{% endif %}
+{% endblock %}
