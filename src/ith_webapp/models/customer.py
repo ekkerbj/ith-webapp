@@ -40,3 +40,8 @@ class Customer(Base):
         secondary="customer_market",
         back_populates="customers"
     )
+    tools = relationship(
+        "CustomerTools",
+        back_populates="customer",
+        cascade="all, delete-orphan"
+    )
