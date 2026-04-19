@@ -11,3 +11,4 @@ F-008: CustomerApplication and Specs models, migration, and tests implemented an
 2026-04-19: Classification model and test implemented for F-010.
 2026-04-19: CheckInSub model and workflow flags implemented, tested, and prd.json updated.
 13. 2026-04-19: Service model, migration, and test implemented and verified for F-014.
+F-015 ServiceSub model and migration implemented, tested, and verified.
