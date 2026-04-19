@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}{{ part.part_number }} - ITH{% endblock %}
+
+{% block content %}
+<h1>{{ part.part_number }}</h1>
+
+<p>{{ part.description or "" }}</p>
+<p>Active: {{ "Yes" if part.active else "No" }}</p>
+
+<a href="{{ url_for('parts.part_sold_history', part_id=part.part_id) }}">Sold history</a>
+{% endblock %}

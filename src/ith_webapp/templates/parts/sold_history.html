@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}{{ part.part_number }} Sold History - ITH{% endblock %}
+
+{% block content %}
+<h1>Sold History for {{ part.part_number }}</h1>
+
+{% if sales %}
+<table>
+    <thead>
+        <tr>
+            <th>Quantity</th>
+            <th>Sold Date</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for sale in sales %}
+        <tr>
+            <td>{{ sale.quantity }}</td>
+            <td>{{ sale.sold_date }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No parts sold history found.</p>
+{% endif %}
+
+<a href="{{ url_for('parts.part_detail', part_id=part.part_id) }}">Back to part</a>
+{% endblock %}

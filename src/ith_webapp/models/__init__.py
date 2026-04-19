@@ -15,5 +15,26 @@ from ith_webapp.models.service_time import ServiceTime  # noqa: F401
 from ith_webapp.models.service_measurements import ServiceMeasurements  # noqa: F401
 from ith_webapp.models.packing_list_sub import PackingListSub  # noqa: F401
 from ith_webapp.models.packing_list import PackingList  # noqa: F401
+from ith_webapp.models.part import Part  # noqa: F401
+from ith_webapp.models.parts_list import PartsList, PartsSub  # noqa: F401
+from ith_webapp.models.parts_sold import PartsSold  # noqa: F401
 
-__all__ = ["Customer", "CustomerAddress", "CustomerContact", "CustomerCommunicationLog", "CustomerTools", "CustomerToolsSub", "CustomerApplication", "CustomerApplicationSpecs", "CheckIn", "CheckInSub", "Service", "PackingList", "PackingListSub"]
+__all__ = [
+    "Customer",
+    "CustomerAddress",
+    "CustomerContact",
+    "CustomerCommunicationLog",
+    "CustomerTools",
+    "CustomerToolsSub",
+    "CustomerApplication",
+    "CustomerApplicationSpecs",
+    "CheckIn",
+    "CheckInSub",
+    "Service",
+    "PackingList",
+    "PackingListSub",
+    "Part",
+    "PartsList",
+    "PartsSub",
+    "PartsSold",
+]
