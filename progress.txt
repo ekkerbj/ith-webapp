@@ -2,3 +2,4 @@ F-001: Project infrastructure and DB foundation verified and passes set true.
 F-002: Alembic migration setup, initial migration generated and applied, tests passing.
 2026-04-19: Customer CRUD (F-003) verified, tests passing, prd.json updated.
 2026-04-19: Customer delete (F-004) implemented, tested, and prd.json updated.
+F-005 Customer Address Management implemented and tested.
