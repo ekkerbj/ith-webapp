@@ -1,4 +1,3 @@
-F-009: Customer Market Assignment model and relationship implemented, tested, and migrated.
 2026-04-19: CustomerTools and CustomerToolsSub models, migrations, and tests implemented and verified for F-011.
 F-008: CustomerApplication and Specs models, migration, and tests implemented and verified.
 2026-04-19: Classification model and test implemented for F-010.
@@ -6,7 +5,8 @@ F-008: CustomerApplication and Specs models, migration, and tests implemented an
 13. 2026-04-19: Service model, migration, and test implemented and verified for F-014.
 F-015 ServiceSub model and migration implemented, tested, and verified.
 2026-04-19: ServiceTime model, migration, and test implemented and verified for F-016.
-16. 2026-04-19: PackingListSub model, migration, and test implemented and prd.json updated.
+16. 2026-04-19: Part model, migration, and test implemented and verified for F-025.
+2026-04-19: PackingListSub model, migration, and test implemented and prd.json updated.
 2026-04-19: F-020 Quote Calculations (ItemSum, LaborSum) implemented, tested, and prd.json updated.
 2026-04-19: ServiceMeasurements model, migration, and test implemented and verified for F-017.
 2026-04-19: ServiceFlag and ServiceFlagAssignment models, migration, and tests implemented and verified for F-018.
