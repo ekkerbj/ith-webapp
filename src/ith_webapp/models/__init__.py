@@ -10,5 +10,7 @@ from ith_webapp.models.unit import Unit  # noqa: F401
 from ith_webapp.models.customer_application import CustomerApplication, CustomerApplicationSpecs  # noqa: F401
 from ith_webapp.models.check_in import CheckIn, CheckInSub  # noqa: F401
 from ith_webapp.models.service import Service  # noqa: F401
+from ith_webapp.models.service_sub import ServiceSub  # noqa: F401
+from ith_webapp.models.service_time import ServiceTime  # noqa: F401
 
 __all__ = ["Customer", "CustomerAddress", "CustomerContact", "CustomerCommunicationLog", "CustomerTools", "CustomerToolsSub", "CustomerApplication", "CustomerApplicationSpecs", "CheckIn", "CheckInSub", "Service"]
