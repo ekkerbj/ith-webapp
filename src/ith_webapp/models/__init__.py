@@ -14,5 +14,6 @@ from ith_webapp.models.service_sub import ServiceSub  # noqa: F401
 from ith_webapp.models.service_time import ServiceTime  # noqa: F401
 from ith_webapp.models.service_measurements import ServiceMeasurements  # noqa: F401
 from ith_webapp.models.packing_list_sub import PackingListSub  # noqa: F401
+from ith_webapp.models.packing_list import PackingList  # noqa: F401
 
-__all__ = ["Customer", "CustomerAddress", "CustomerContact", "CustomerCommunicationLog", "CustomerTools", "CustomerToolsSub", "CustomerApplication", "CustomerApplicationSpecs", "CheckIn", "CheckInSub", "Service", "PackingListSub"]
+__all__ = ["Customer", "CustomerAddress", "CustomerContact", "CustomerCommunicationLog", "CustomerTools", "CustomerToolsSub", "CustomerApplication", "CustomerApplicationSpecs", "CheckIn", "CheckInSub", "Service", "PackingList", "PackingListSub"]
