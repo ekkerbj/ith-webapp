@@ -73,3 +73,18 @@ def customer_edit(customer_id: int):
         return redirect(url_for("customers.customer_detail", customer_id=customer_id))
     finally:
         session.close()
+
+
+@bp.route("/<int:customer_id>/delete", methods=["POST"])
+def customer_delete(customer_id: int):
+    session = _get_session()
+    try:
+        repo = CustomerRepository(session)
+        customer = repo.find_by_id(customer_id)
+        if customer is None:
+            return "Not found", 404
+        session.delete(customer)
+        session.commit()
+        return redirect(url_for("customers.customer_list"))
+    finally:
+        session.close()
