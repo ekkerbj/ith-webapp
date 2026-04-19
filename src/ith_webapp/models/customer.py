@@ -1,5 +1,5 @@
 from sqlalchemy import Boolean, Integer, Numeric, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ith_webapp.database import Base
 
@@ -33,4 +33,10 @@ class Customer(Base):
     )
     calibration_interval: Mapped[int | None] = mapped_column(
         "calibration interval", Integer, nullable=True
+    )
+
+    markets = relationship(
+        "Market",
+        secondary="customer_market",
+        back_populates="customers"
     )

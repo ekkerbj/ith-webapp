@@ -5,3 +5,4 @@ F-002: Alembic migration setup, initial migration generated and applied, tests p
 F-005 Customer Address Management implemented and tested.
 2026-04-19: CustomerContact model and migration implemented, tested, and prd.json updated.
 7. 2026-04-19: CustomerCommunicationLog model implemented, tested, and prd.json updated.
+F-009: Customer Market Assignment model and relationship implemented, tested, and migrated.
