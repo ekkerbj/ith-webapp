@@ -1,3 +1,5 @@
+import io
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -71,3 +73,37 @@ def test_part_labels_route_renders_a_printable_label_with_barcode():
     assert "Test Part" in html
     assert "Main Warehouse" in html
     assert "<svg" in html
+
+
+def test_part_attachments_can_be_uploaded_and_downloaded(tmp_path):
+    app = create_app(testing=True)
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(bind=engine)
+
+    session = factory()
+    session.add(Part(part_number="P-3003", description="Attachment Part", active=True))
+    session.commit()
+    session.close()
+
+    app.config["SESSION_FACTORY"] = factory
+    app.config["PART_ATTACHMENT_STORAGE_ROOT"] = tmp_path
+    client = app.test_client()
+
+    response = client.post(
+        "/parts/1/attachments",
+        data={"file": (io.BytesIO(b"attachment contents"), "spec sheet.txt")},
+        content_type="multipart/form-data",
+    )
+
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/parts/1")
+
+    detail = client.get("/parts/1")
+    assert detail.status_code == 200
+    assert "spec_sheet.txt" in detail.get_data(as_text=True)
+
+    download = client.get("/parts/1/attachments/spec_sheet.txt")
+
+    assert download.status_code == 200
+    assert download.data == b"attachment contents"

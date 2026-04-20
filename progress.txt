@@ -1,4 +1,3 @@
-24. 2026-04-20: F-072 Item Usage Analytics implemented with SAP item usage report, repository protocol, tests, and ADR.
 25. 2026-04-20: F-073 Customer-Specific Pricing Display implemented with SAP-backed customer/part price comparison report, integrity checks, tests, and ADR.
 26. 2026-04-20: F-074 Repair Time Analysis implemented with grouped service/technician HTML report, tests, and ADR.
 27. 2026-04-20: F-075 Audit Trail / Change Log implemented with filterable HTML report, user tracking, tests, migration, and ADR.
@@ -14,3 +13,4 @@
 37. 2026-04-20: F-085 Parts Sold and BOM Reports implemented with parts sold history, assembly BOM, and customer-specific parts list HTML/PDF routes, tests, and ADR.
 38. 2026-04-20: F-086 Regional Localization implemented with region-aware currency formatting for Brazil and Mexico quote/invoice PDFs, tests, and ADR.
 39. 2026-04-20: F-087 Customer-Specific Report Variants implemented with deterministic Alstom and Mortenson report titles, tests, and ADR.
+40. 2026-04-20: F-088 File Attachment Support implemented with part attachment upload/download routes, filesystem storage, tests, and ADR.
