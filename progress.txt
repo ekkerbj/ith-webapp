@@ -1,5 +1,3 @@
-
-2026-04-19: F-045 Service Multi Quote PDF implemented with in-repo PDF generation, report route, tests, and ADR.
 2026-04-19: F-046 Basic Quote PDF implemented with BOM sections, static quote pages, report route, tests, and ADR.
 2026-04-19: F-047 Service Invoice PDF implemented with invoice sections, Avatax variant support, report route, tests, and ADR.
 2026-04-19: F-048 Check In Document PDF implemented with tool receipt sections, report route, tests, and ADR.
@@ -14,3 +12,5 @@
 2026-04-19: F-057 Open Repair List and Shop Data implemented with HTML report routes, tests, and ADR.
 2026-04-19: F-058 Barcode Generation - 1D implemented with SVG barcode service, tests, dependency update, and ADR.
 2026-04-19: F-059 Barcode Generation - 2D implemented with PDF417 SVG output, tests, dependency update, and ADR.
+2026-04-19: F-060 Part Labels implemented with printable labels route, barcode SVG, tests, and ADR.
+2026-04-19: F-061 ITH Test Gauge Label Printing implemented with calibration and certification label routes, barcode SVG, tests, and ADR.
