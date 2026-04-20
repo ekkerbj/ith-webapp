@@ -365,11 +365,11 @@ def create_app(testing: bool = False) -> Flask:
         rows = _inventory_reorder_rows()
         return render_template_string(
             """
-            <!doctype html>
-            <html lang="en">
-            <head><title>Inventory Reorder Dashboard</title></head>
-            <body>
-              <h1>Inventory Reorder Dashboard</h1>
+            {% extends "base.html" %}
+            {% block title %}Inventory Reorder Dashboard - ITH{% endblock %}
+            {% block content %}
+            <h1>Inventory Reorder Dashboard</h1>
+            <section>
               <table>
                 <thead>
                   <tr><th>Item</th><th>Reorder Quantity</th></tr>
@@ -380,8 +380,8 @@ def create_app(testing: bool = False) -> Flask:
                   {% endfor %}
                 </tbody>
               </table>
-            </body>
-            </html>
+            </section>
+            {% endblock %}
             """,
             rows=rows,
         )

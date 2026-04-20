@@ -81,8 +81,19 @@ def test_login_page_uses_shared_layout_and_styles(client):
 
     assert response.status_code == 200
     assert 'href="/static/style.css"' in body
-    assert "<main>" in body
+    assert 'class="app-shell__content"' in body
     assert "Login" in body
+
+
+def test_login_page_exposes_pwa_metadata_and_app_shell_markup(client):
+    response = client.get("/login?next=/")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert 'rel="manifest"' in body
+    assert 'name="theme-color"' in body
+    assert 'class="app-shell__header"' in body
+    assert 'class="app-shell__nav"' in body
 
 
 def test_missing_route_renders_custom_404_page():

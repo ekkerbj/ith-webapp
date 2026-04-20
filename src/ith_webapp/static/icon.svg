@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="ITH">
+  <defs>
+    <linearGradient id="brand" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f4c81"/>
+      <stop offset="100%" stop-color="#1b7fd4"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#brand)"/>
+  <circle cx="384" cy="128" r="40" fill="#7dd3fc" fill-opacity="0.45"/>
+  <rect x="112" y="128" width="56" height="256" rx="24" fill="#ffffff"/>
+  <rect x="196" y="128" width="120" height="56" rx="24" fill="#ffffff"/>
+  <rect x="196" y="216" width="120" height="56" rx="24" fill="#ffffff"/>
+  <rect x="196" y="328" width="208" height="56" rx="24" fill="#ffffff"/>
+  <rect x="344" y="128" width="56" height="256" rx="24" fill="#ffffff"/>
+</svg>
