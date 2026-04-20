@@ -81,6 +81,16 @@ def test_stylesheet_is_served_with_responsive_rules(client):
     assert "max-width" in body
 
 
+def test_stylesheet_includes_list_row_formatting_rules(client):
+    response = client.get("/static/style.css")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "tbody tr:nth-child(even)" in body
+    assert "tbody tr:hover" in body
+    assert "tbody tr:focus-within" in body
+
+
 def test_default_startup_creates_tables(tmp_path):
     db_path = tmp_path / "test.db"
     app = create_app()
