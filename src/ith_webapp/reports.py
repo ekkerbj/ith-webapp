@@ -20,6 +20,7 @@ from ith_webapp.models import (
     CustomerToolsSub,
     ITHTestGauge,
     FieldService,
+    OrderConfirmation,
     ServiceMeasurements,
     PackingList,
     PackingListSub,
@@ -1419,6 +1420,31 @@ def build_demo_contract_pdf(session, demo_contract_id: int) -> bytes:
     return _build_pdf(pages)
 
 
+def _order_confirmation_lines(order_confirmation: OrderConfirmation) -> list[str]:
+    return [
+        "Order Confirmation",
+        f"Customer: {getattr(order_confirmation.customer, 'customer_name', '') or ''}",
+        f"Card Code: {getattr(order_confirmation.customer, 'card_code', '') or ''}",
+        f"Order Number: {order_confirmation.order_number or ''}",
+        f"Created At: {order_confirmation.created_at.isoformat()}",
+        "",
+        "Notes",
+        order_confirmation.notes or "(none)",
+        "",
+        "Signature",
+        "Customer Signature: ____________________",
+        "ITH Representative: ____________________",
+    ]
+
+
+def build_order_confirmation_pdf(session, order_confirmation_id: int) -> bytes:
+    order_confirmation = session.get(OrderConfirmation, order_confirmation_id)
+    if order_confirmation is None:
+        raise ValueError(f"OrderConfirmation {order_confirmation_id} not found")
+    pages = _paginate(_order_confirmation_lines(order_confirmation))
+    return _build_pdf(pages)
+
+
 def build_ith_test_gauge_certificates_pdf(
     session, ith_test_gauge_id: int, variant: str | None = None
 ) -> bytes:
@@ -1929,6 +1955,20 @@ def demo_contract_report(demo_contract_id: int):
         response = Response(pdf_bytes, mimetype="application/pdf")
         response.headers["Content-Disposition"] = (
             f'inline; filename="demo-contract-{demo_contract_id}.pdf"'
+        )
+        return response
+    finally:
+        session.close()
+
+
+@bp.route("/order-confirmation/<int:order_confirmation_id>")
+def order_confirmation_report(order_confirmation_id: int):
+    session = _get_session()
+    try:
+        pdf_bytes = build_order_confirmation_pdf(session, order_confirmation_id)
+        response = Response(pdf_bytes, mimetype="application/pdf")
+        response.headers["Content-Disposition"] = (
+            f'inline; filename="order-confirmation-{order_confirmation_id}.pdf"'
         )
         return response
     finally:

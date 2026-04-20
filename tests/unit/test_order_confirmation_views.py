@@ -75,3 +75,18 @@ def test_order_confirmation_create_edit_and_delete_routes_work():
 
     delete_response = client.post("/order-confirmations/1/delete", follow_redirects=False)
     assert delete_response.status_code == 302
+
+
+def test_order_confirmation_report_route_returns_pdf_with_confirmation_data():
+    app = _create_test_app_with_order_confirmations()
+    client = app.test_client()
+
+    response = client.get("/reports/order-confirmation/1")
+
+    assert response.status_code == 200
+    assert response.mimetype == "application/pdf"
+    assert response.data.startswith(b"%PDF")
+    assert b"Order Confirmation" in response.data
+    assert b"Acme Corp" in response.data
+    assert b"OC-1001" in response.data
+    assert b"Confirmed by phone" in response.data

@@ -1,5 +1,3 @@
-19. 2026-04-20: F-067 Service Extended Fields implemented with expanded service model fields, persistence test, and ADR.
-20. 2026-04-20: F-068 Search and Filtering implemented with customer, field service, parts, and packing list index filters, packing list header fields, tests, migration, and ADR.
 21. 2026-04-20: F-069 Pagination implemented with shared server-side page controls, configurable page size, list-view updates, tests, and ADR.
 22. 2026-04-20: F-070 Customer Form Validation and Flash Messaging implemented with server-side validation, flash feedback, inline errors, tests, and ADR.
 23. 2026-04-20: F-071 MonthCompare Date Filtering implemented with shared current-month helper, list-view filters, tests, and ADR.
@@ -15,3 +13,4 @@
 33. 2026-04-20: F-081 Report - Toolset (PDF) implemented with customer tool detail PDF output, route, tests, and ADR.
 34. 2026-04-20: F-082 Report - Communication and Lead Letters (PDF) implemented with customer communication, wind turbine lead letter, and follow-up letter PDF routes, tests, and ADR.
 35. 2026-04-20: F-083 Report - Names and CC Form (PDF) implemented with customer contact names and credit card authorization form PDF routes, tests, and ADR.
+36. 2026-04-20: F-084 Report - Order Confirmation (PDF) implemented with order confirmation PDF route, tests, and ADR.
