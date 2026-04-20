@@ -334,6 +334,16 @@ def _parts_sold_history_context(session, part_id: int) -> dict[str, object]:
     return {"part": part, "sales": sales}
 
 
+def _dn_import_rows(session) -> list[dict[str, object]]:
+    rows = (
+        session.query(PartsSold, Part)
+        .join(Part, Part.part_id == PartsSold.part_id)
+        .order_by(PartsSold.sold_date, PartsSold.id)
+        .all()
+    )
+    return [{"sale": sale, "part": part} for sale, part in rows]
+
+
 def _parts_sold_history_lines(context: dict[str, object]) -> list[str]:
     part = context["part"]
     sales: list[PartsSold] = context["sales"]
@@ -562,6 +572,34 @@ _PARTS_SOLD_HISTORY_TEMPLATE = """
   <p>(none)</p>
   {% endif %}
 </section>
+{% endblock %}
+"""
+
+
+_DN_IMPORT_LIST_TEMPLATE = """
+{% extends "base.html" %}
+{% block title %}DN Import List - ITH{% endblock %}
+{% block content %}
+<h1>DN Import List</h1>
+<table>
+  <thead>
+    <tr><th>Sold Date</th><th>Part Number</th><th>Description</th><th>Quantity</th></tr>
+  </thead>
+  <tbody>
+    {% if rows %}
+    {% for row in rows %}
+    <tr>
+      <td>{{ row.sale.sold_date }}</td>
+      <td>{{ row.part.part_number }}</td>
+      <td>{{ row.part.description or "" }}</td>
+      <td>{{ row.sale.quantity }}</td>
+    </tr>
+    {% endfor %}
+    {% else %}
+    <tr><td colspan="4">(none)</td></tr>
+    {% endif %}
+  </tbody>
+</table>
 {% endblock %}
 """
 
@@ -1817,6 +1855,17 @@ def parts_sold_history_pdf_report(part_id: int):
             f'inline; filename="parts-sold-history-{part_id}.pdf"'
         )
         return response
+    finally:
+        session.close()
+
+
+@bp.route("/dn-import-list")
+@bp.route("/dn-import")
+def dn_import_list_report():
+    session = _get_session()
+    try:
+        rows = _dn_import_rows(session)
+        return render_template_string(_DN_IMPORT_LIST_TEMPLATE, rows=rows)
     finally:
         session.close()
 
