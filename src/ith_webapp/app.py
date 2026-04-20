@@ -4,9 +4,14 @@ import os
 from urllib import error, request as urllib_request
 
 from flask import Flask, abort, current_app, redirect, render_template_string, request, session, url_for
+from sqlalchemy import func
 from werkzeug.exceptions import HTTPException
 
 from ith_webapp.database import Base, create_session_factory
+from ith_webapp.models.audit_trail import AuditTrail
+from ith_webapp.models.check_in import CheckInSub
+from ith_webapp.models.packing_list import PackingList
+from ith_webapp.models.service import Service
 from ith_webapp.views.session import register_session_middleware
 
 
@@ -33,6 +38,44 @@ def _inventory_reorder_rows():
                 }
             )
     return rows
+
+
+def _dashboard_counts(session) -> dict[str, int]:
+    open_check_ins = (
+        session.query(func.count(CheckInSub.id))
+        .filter(CheckInSub.closed.is_(False))
+        .scalar()
+    )
+    pending_quotes = (
+        session.query(func.count(Service.service_id))
+        .filter(
+            Service.active.is_(True),
+            Service.completed_date.is_(None),
+            Service.quoted_date.is_(None),
+        )
+        .scalar()
+    )
+    ready_to_ship = session.query(func.count(PackingList.id)).scalar()
+    open_services = (
+        session.query(func.count(Service.service_id))
+        .filter(Service.active.is_(True), Service.completed_date.is_(None))
+        .scalar()
+    )
+    return {
+        "open_check_ins": open_check_ins or 0,
+        "pending_quotes": pending_quotes or 0,
+        "ready_to_ship": ready_to_ship or 0,
+        "open_services": open_services or 0,
+    }
+
+
+def _recent_activity(session, limit: int = 5) -> list[AuditTrail]:
+    return (
+        session.query(AuditTrail)
+        .order_by(AuditTrail.changed_at.desc(), AuditTrail.audit_trail_id.desc())
+        .limit(limit)
+        .all()
+    )
 
 
 ERROR_PAGE_TEMPLATE = """
@@ -192,73 +235,72 @@ def create_app(testing: bool = False) -> Flask:
 
     @app.route("/")
     def index():
-        sections = [
-            ("Customers", [("Customer List", "customers.customer_list")]),
-            ("Check In", [("Check In workflow coming soon", None)]),
-            (
-                "Services",
-                [
-                    ("Projects", "projects.project_list"),
-                    ("Demo Contracts", "demo_contracts.demo_contract_list"),
-                    ("Order Confirmations", "order_confirmations.order_confirmation_list"),
-                    ("Warranty Claims", "warranty_claims.warranty_claim_list"),
-                ],
-            ),
-            (
-                "Packing Lists",
-                [
-                    ("Consignment Lists", "consignment_list.consignment_list"),
-                    ("Packing List Index", "packing_list_workflow.packing_list_index"),
-                    ("Ready to Produce", "packing_list_workflow.ready_to_produce"),
-                    ("Ready to Ship", "packing_list_workflow.ready_to_ship"),
-                ],
-            ),
-            ("Parts", [("Parts", "parts.part_list")]),
-            (
-                "Field Service",
-                [
-                    ("Field Services", "field_services.field_service_list"),
-                    ("Gas Turbines", "sites_gas_turbines.list"),
-                    ("Wind Turbines", "sites_wind_turbines.list"),
-                    ("Wind Gas Sites", "sites_wind_gas.list"),
-                    ("Wind Leads", "wind_turbine_leads.list"),
-                    ("Lead Details", "wind_turbine_leads_details.list"),
-                ],
-            ),
-            (
-                "Reports",
-                [
-                    ("Inventory Reorder Dashboard", "inventory_reorder_dashboard"),
-                    ("Audit Trail", "reports.audit_trail_report"),
-                ],
-            ),
-            ("Admin", [("Login/logout and access controls", None)]),
-        ]
+        session = app.config["SESSION_FACTORY"]()
+        try:
+            summary = _dashboard_counts(session)
+            activity = _recent_activity(session)
+        finally:
+            session.close()
         return render_template_string(
             """
             {% extends "base.html" %}
-            {% block title %}Switchboard - ITH{% endblock %}
+            {% block title %}Dashboard - ITH{% endblock %}
             {% block content %}
-            <h1>Switchboard</h1>
-            {% for heading, links in sections %}
+            <h1>Dashboard</h1>
             <section>
-              <h2>{{ heading }}</h2>
-              <ul>
-                {% for label, endpoint in links %}
-                <li>
-                  {% if endpoint %}
-                  <a href="{{ url_for(endpoint) }}">{{ label }}</a>
+              <h2>Summary</h2>
+              <dl>
+                <div><dt>Open Check-Ins</dt><dd>{{ summary.open_check_ins }}</dd></div>
+                <div><dt>Pending Quotes</dt><dd>{{ summary.pending_quotes }}</dd></div>
+                <div><dt>Ready to Ship</dt><dd>{{ summary.ready_to_ship }}</dd></div>
+                <div><dt>Open Services</dt><dd>{{ summary.open_services }}</dd></div>
+              </dl>
+            </section>
+            <section>
+              <h2>Recent Activity</h2>
+              <table>
+                <thead>
+                  <tr>
+                    <th>When</th>
+                    <th>Table</th>
+                    <th>Field</th>
+                    <th>Action</th>
+                    <th>User</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% if activity %}
+                  {% for row in activity %}
+                  <tr>
+                    <td>{{ row.changed_at.isoformat() }}</td>
+                    <td>{{ row.table_name }}</td>
+                    <td>{{ row.field_name }}</td>
+                    <td>{{ row.action }}</td>
+                    <td>{{ row.changed_by or "" }}</td>
+                  </tr>
+                  {% endfor %}
                   {% else %}
-                  {{ label }}
+                  <tr><td colspan="5">(none)</td></tr>
                   {% endif %}
-                </li>
-                {% endfor %}
+                </tbody>
+              </table>
+            </section>
+            <section>
+              <h2>Quick Access</h2>
+              <ul>
+                <li><a href="{{ url_for('customers.customer_list') }}">Customer List</a></li>
+                <li><a href="{{ url_for('reports.open_repair_list_report') }}">Open Repair List</a></li>
+                <li><a href="{{ url_for('packing_list_workflow.packing_list_index') }}">Packing List Index</a></li>
+                <li><a href="{{ url_for('packing_list_workflow.ready_to_ship') }}">Ready to Ship</a></li>
+                <li><a href="{{ url_for('field_services.field_service_list') }}">Field Services</a></li>
+                <li><a href="{{ url_for('inventory_reorder_dashboard') }}">Inventory Reorder Dashboard</a></li>
+                <li><a href="{{ url_for('reports.audit_trail_report') }}">Audit Trail</a></li>
               </ul>
             </section>
-            {% endfor %}
             {% endblock %}
             """,
-            sections=sections,
+            summary=summary,
+            activity=activity,
         )
 
     @app.before_request

@@ -14,3 +14,4 @@
 45. 2026-04-20: F-093 Service Packet PDF implemented with bundled service quote, measurement, and optional gauge certificate pages, route, tests, and ADR.
 46. 2026-04-20: F-094 Field Service Hours Graph implemented with aggregated hours-by-date PDF output, route, tests, and ADR.
 47. 2026-04-20: F-095 Sorting on List Views implemented with shared sortable CRUD headers, preserved URL state, tests, and ADR.
+48. 2026-04-20: F-096 Dashboard Home Page implemented with summary counts, recent activity, quick-access links, tests, and ADR.

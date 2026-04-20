@@ -2,6 +2,11 @@ from flask import Flask
 
 from ith_webapp.database import Base, init_db
 from ith_webapp.app import create_app
+from ith_webapp.models.check_in import CheckIn, CheckInSub
+from ith_webapp.models.customer import Customer
+from ith_webapp.models.packing_list import PackingList
+from ith_webapp.models.service import Service
+from ith_webapp.services.audit_trail import record_audit_change
 
 
 def test_create_app_returns_flask_instance():
@@ -15,15 +20,59 @@ def test_index_renders_switchboard(client):
     body = response.get_data(as_text=True)
 
     assert response.status_code == 200
-    assert "Switchboard" in body
-    assert "Customers" in body
-    assert "Check In" in body
-    assert "Services" in body
-    assert "Packing Lists" in body
-    assert "Parts" in body
-    assert "Field Service" in body
-    assert "Reports" in body
-    assert "Admin" in body
+    assert "Dashboard" in body
+    assert "Open Check-Ins" in body
+    assert "Pending Quotes" in body
+    assert "Ready to Ship" in body
+    assert "Open Services" in body
+
+
+def test_index_dashboard_shows_summary_counts_recent_activity_and_quick_links(app):
+    session = app.config["SESSION_FACTORY"]()
+    try:
+        customer = Customer(customer_name="Acme")
+        session.add(customer)
+        session.flush()
+
+        check_in = CheckIn(customer_id=customer.customer_id)
+        session.add(check_in)
+        session.flush()
+
+        session.add(CheckInSub(check_in_id=check_in.id, tool_id=1001, closed=False))
+        session.add(
+            Service(
+                customer_id=customer.customer_id,
+                active=True,
+                order_status="Open",
+                quote_status=None,
+                quoted_date=None,
+                completed_date=None,
+            )
+        )
+        session.add(PackingList(customer_name="Acme", packing_date="2026-04-20"))
+        record_audit_change(
+            session,
+            table_name="customer",
+            record_id=customer.customer_id,
+            action="update",
+            changes={"customer_name": ("Old Name", "Acme")},
+            changed_by="tester@example.com",
+        )
+        session.commit()
+
+        response = app.test_client().get("/")
+        body = response.get_data(as_text=True)
+
+        assert response.status_code == 200
+        assert "1" in body
+        assert "Recent Activity" in body
+        assert "customer_name" in body
+        assert "tester@example.com" in body
+        assert "Quick Access" in body
+        assert "Customer List" in body
+        assert "Packing List Index" in body
+    finally:
+        session.close()
 
 
 def test_login_page_uses_shared_layout_and_styles(client):
