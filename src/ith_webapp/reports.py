@@ -856,6 +856,114 @@ _CUSTOMER_TOOLS_TEMPLATE = """
 """
 
 
+_SAP_FINANCIAL_SUMMARY_TEMPLATE = """
+{% extends "base.html" %}
+{% block title %}SAP Financial Summaries - ITH{% endblock %}
+{% block content %}
+<h1>SAP Financial Summaries</h1>
+{% for document in documents %}
+<section>
+  <h2>{{ document.title }}</h2>
+  {% for summary in document.summaries %}
+  <section>
+    <h3>{{ summary.title }}</h3>
+    <table>
+      <thead>
+        <tr><th>Group</th><th>Count</th><th>Total</th></tr>
+      </thead>
+      <tbody>
+        {% if summary.rows %}
+        {% for row in summary.rows %}
+        <tr><td>{{ row.label }}</td><td>{{ row.count }}</td><td>{{ row.total }}</td></tr>
+        {% endfor %}
+        {% else %}
+        <tr><td colspan="3">(none)</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </section>
+  {% endfor %}
+</section>
+{% endfor %}
+{% endblock %}
+"""
+
+
+def _financial_summary_document_types(document_type: str | None) -> list[str]:
+    selected = (document_type or "").strip().lower()
+    if not selected:
+        return ["invoice", "credit-memo"]
+    return [part.strip().lower() for part in selected.split(",") if part.strip()]
+
+
+def _financial_summary_group_bys(group_by: str | None) -> list[str]:
+    selected = (group_by or "").strip().lower()
+    if not selected:
+        return ["industry", "item", "salesperson", "state"]
+    return [part.strip().lower() for part in selected.split(",") if part.strip()]
+
+
+def _financial_summary_rows(repository, document_type: str) -> list[object]:
+    methods = {
+        "invoice": "list_invoice_summaries",
+        "credit-memo": "list_credit_memo_summaries",
+    }
+    method_name = methods.get(document_type)
+    if method_name is None:
+        raise ValueError(f"Unsupported document type: {document_type}")
+    method = getattr(repository, method_name, None)
+    if method is None:
+        raise RuntimeError(f"Financial summary repository is missing {method_name}()")
+    return list(method())
+
+
+def _financial_summary_label(row, group_by: str) -> str:
+    if group_by == "industry":
+        return getattr(row, "industry", None) or "Unassigned"
+    if group_by == "item":
+        item_code = getattr(row, "item_code", None) or ""
+        item_name = getattr(row, "item_name", None) or ""
+        if item_code and item_name and item_code != item_name:
+            return f"{item_code} - {item_name}"
+        return item_code or item_name or "Unassigned"
+    if group_by == "salesperson":
+        return getattr(row, "salesperson", None) or "Unassigned"
+    if group_by == "state":
+        return getattr(row, "state", None) or "Unassigned"
+    raise ValueError(f"Unsupported group by value: {group_by}")
+
+
+def _financial_summary_group_rows(rows: list[object], group_by: str) -> list[dict[str, str]]:
+    grouped: dict[str, list[object]] = defaultdict(list)
+    for row in rows:
+        grouped[_financial_summary_label(row, group_by)].append(row)
+    summary_rows = []
+    for label, grouped_rows in sorted(grouped.items(), key=lambda item: item[0].lower()):
+        total = Decimal("0")
+        for row in grouped_rows:
+            total += Decimal(str(getattr(row, "total", 0) or 0))
+        summary_rows.append({"label": label, "count": str(len(grouped_rows)), "total": _format_money(total)})
+    return summary_rows
+
+
+def _financial_summary_documents(
+    repository, document_types: list[str], group_bys: list[str]
+) -> list[dict[str, object]]:
+    documents = []
+    for document_type in document_types:
+        rows = _financial_summary_rows(repository, document_type)
+        title = "Invoice Summaries" if document_type == "invoice" else "Credit Memo Summaries"
+        summaries = [
+            {
+                "title": f"By {group_by.replace('-', ' ').title()}",
+                "rows": _financial_summary_group_rows(rows, group_by),
+            }
+            for group_by in group_bys
+        ]
+        documents.append({"title": title, "summaries": summaries})
+    return documents
+
+
 @bp.route("/service-multi-quote/<int:service_id>")
 def service_multi_quote_report(service_id: int):
     session = _get_session()
@@ -1084,3 +1192,18 @@ def customer_tools_inventory_report():
         )
     finally:
         session.close()
+
+
+@bp.route("/sap/financial-summaries")
+@bp.route("/sap/financial-summaries/<document_type>")
+@bp.route("/sap/financial-summaries/<document_type>/<group_by>")
+def sap_financial_summaries_report(
+    document_type: str | None = None, group_by: str | None = None
+):
+    repository = current_app.config["SAP_FINANCIAL_SUMMARY_REPOSITORY"]
+    documents = _financial_summary_documents(
+        repository,
+        _financial_summary_document_types(document_type or request.args.get("document_type")),
+        _financial_summary_group_bys(group_by or request.args.get("group_by")),
+    )
+    return render_template_string(_SAP_FINANCIAL_SUMMARY_TEMPLATE, documents=documents)
