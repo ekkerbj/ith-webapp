@@ -27,6 +27,7 @@ from ith_webapp.models import (
     Part,
     PartsList,
     PartsSub,
+    PartsSold,
     Rental,
     Service,
     ServiceSub,
@@ -301,6 +302,250 @@ def _parts_catalog_lines(context: dict[str, object]) -> list[str]:
                 label += f" | {customer.card_code}"
             lines.append(f" - {label} | Qty {row['quantity']}")
     return lines
+
+
+def _parts_sold_history_context(session, part_id: int) -> dict[str, object]:
+    part = session.get(Part, part_id)
+    if part is None:
+        raise ValueError(f"Part {part_id} not found")
+    sales = (
+        session.query(PartsSold)
+        .filter(PartsSold.part_id == part_id)
+        .order_by(PartsSold.id)
+        .all()
+    )
+    return {"part": part, "sales": sales}
+
+
+def _parts_sold_history_lines(context: dict[str, object]) -> list[str]:
+    part = context["part"]
+    sales: list[PartsSold] = context["sales"]
+    lines = [
+        "Parts Sold History",
+        f"Part Number: {part.part_number}",
+        f"Description: {part.description or ''}",
+        "",
+        "Sales",
+    ]
+    if not sales:
+        lines.append("(none)")
+    else:
+        for sale in sales:
+            lines.append(f" - Qty {sale.quantity} | Sold Date {sale.sold_date}")
+    return lines
+
+
+def build_parts_sold_history_pdf(session, part_id: int) -> bytes:
+    pages = _paginate(_parts_sold_history_lines(_parts_sold_history_context(session, part_id)))
+    return _build_pdf(pages)
+
+
+def _parts_list_context(session, parts_list_id: int) -> dict[str, object]:
+    parts_list = session.get(PartsList, parts_list_id)
+    if parts_list is None:
+        raise ValueError(f"PartsList {parts_list_id} not found")
+    rows = (
+        session.query(PartsSub)
+        .filter(PartsSub.parts_list_id == parts_list_id)
+        .order_by(PartsSub.id)
+        .all()
+    )
+    return {
+        "parts_list": parts_list,
+        "rows": [
+            {
+                "part": session.get(Part, row.part_id),
+                "part_id": row.part_id,
+                "quantity": row.quantity,
+            }
+            for row in rows
+        ],
+    }
+
+
+def _parts_list_lines(context: dict[str, object]) -> list[str]:
+    parts_list = context["parts_list"]
+    rows: list[dict[str, object]] = context["rows"]
+    lines = [
+        "Assembly Parts List",
+        f"BOM: {parts_list.name or ''}",
+        f"Parts List ID: {parts_list.id}",
+        "",
+        "Components",
+    ]
+    if not rows:
+        lines.append("(none)")
+    else:
+        for row in rows:
+            part = row["part"]
+            part_number = part.part_number if part is not None else f"Part {row['part_id']}"
+            lines.append(f" - {part_number} | Qty {row['quantity']}")
+    return lines
+
+
+def build_parts_list_pdf(session, parts_list_id: int) -> bytes:
+    pages = _paginate(_parts_list_lines(_parts_list_context(session, parts_list_id)))
+    return _build_pdf(pages)
+
+
+def _customer_parts_list_context(session, customer_id: int) -> dict[str, object]:
+    customer = session.get(Customer, customer_id)
+    if customer is None:
+        raise ValueError(f"Customer {customer_id} not found")
+    rows = (
+        session.query(ConsignmentList)
+        .filter(ConsignmentList.customer_id == customer_id)
+        .order_by(ConsignmentList.consignment_list_id)
+        .all()
+    )
+    return {
+        "customer": customer,
+        "rows": [
+            {
+                "part": session.get(Part, row.part_id),
+                "part_id": row.part_id,
+                "quantity": row.quantity,
+            }
+            for row in rows
+        ],
+    }
+
+
+def _customer_parts_list_lines(context: dict[str, object]) -> list[str]:
+    customer = context["customer"]
+    rows: list[dict[str, object]] = context["rows"]
+    lines = [
+        "Customer-Specific Parts List",
+        f"Customer: {customer.customer_name or ''}",
+        f"Card Code: {customer.card_code or ''}",
+        f"Customer ID: {customer.customer_id}",
+        "",
+        "Parts",
+    ]
+    if not rows:
+        lines.append("(none)")
+    else:
+        for row in rows:
+            part = row["part"]
+            part_number = part.part_number if part is not None else f"Part {row['part_id']}"
+            lines.append(f" - {part_number} | Qty {row['quantity']}")
+    return lines
+
+
+def build_customer_parts_list_pdf(session, customer_id: int) -> bytes:
+    pages = _paginate(
+        _customer_parts_list_lines(_customer_parts_list_context(session, customer_id))
+    )
+    return _build_pdf(pages)
+
+
+_PARTS_LIST_TEMPLATE = """
+{% extends "base.html" %}
+{% block title %}Assembly Parts List - ITH{% endblock %}
+{% block content %}
+<h1>Assembly Parts List</h1>
+<table>
+  <tr><th>BOM</th><td>{{ parts_list.name or "" }}</td></tr>
+  <tr><th>Parts List ID</th><td>{{ parts_list.id }}</td></tr>
+</table>
+<section>
+  <h2>Components</h2>
+  {% if rows %}
+  <table>
+    <thead>
+      <tr>
+        <th>Part Number</th>
+        <th>Quantity</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td>{{ row.part.part_number if row.part else ('Part ' ~ row.part_id) }}</td>
+        <td>{{ row.quantity }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>(none)</p>
+  {% endif %}
+</section>
+{% endblock %}
+"""
+
+
+_CUSTOMER_PARTS_LIST_TEMPLATE = """
+{% extends "base.html" %}
+{% block title %}Customer-Specific Parts List - ITH{% endblock %}
+{% block content %}
+<h1>Customer-Specific Parts List</h1>
+<table>
+  <tr><th>Customer</th><td>{{ customer.customer_name or "" }}</td></tr>
+  <tr><th>Card Code</th><td>{{ customer.card_code or "" }}</td></tr>
+  <tr><th>Customer ID</th><td>{{ customer.customer_id }}</td></tr>
+</table>
+<section>
+  <h2>Parts</h2>
+  {% if rows %}
+  <table>
+    <thead>
+      <tr>
+        <th>Part Number</th>
+        <th>Quantity</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td>{{ row.part.part_number if row.part else ('Part ' ~ row.part_id) }}</td>
+        <td>{{ row.quantity }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>(none)</p>
+  {% endif %}
+</section>
+{% endblock %}
+"""
+
+
+_PARTS_SOLD_HISTORY_TEMPLATE = """
+{% extends "base.html" %}
+{% block title %}Parts Sold History - ITH{% endblock %}
+{% block content %}
+<h1>Parts Sold History</h1>
+<table>
+  <tr><th>Part Number</th><td>{{ part.part_number }}</td></tr>
+  <tr><th>Description</th><td>{{ part.description or "" }}</td></tr>
+</table>
+<section>
+  <h2>Sales</h2>
+  {% if sales %}
+  <table>
+    <thead>
+      <tr>
+        <th>Quantity</th>
+        <th>Sold Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for sale in sales %}
+      <tr>
+        <td>{{ sale.quantity }}</td>
+        <td>{{ sale.sold_date }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p>(none)</p>
+  {% endif %}
+</section>
+{% endblock %}
+"""
 
 
 def _packing_list_lines(packing_list: PackingList, subs: list[PackingListSub]) -> list[str]:
@@ -1511,6 +1756,78 @@ def parts_catalog_pdf_report(part_id: int):
         response = Response(pdf_bytes, mimetype="application/pdf")
         response.headers["Content-Disposition"] = (
             f'inline; filename="parts-catalog-{part_id}.pdf"'
+        )
+        return response
+    finally:
+        session.close()
+
+
+@bp.route("/parts-sold/<int:part_id>")
+def parts_sold_history_report(part_id: int):
+    session = _get_session()
+    try:
+        context = _parts_sold_history_context(session, part_id)
+        return render_template_string(_PARTS_SOLD_HISTORY_TEMPLATE, **context)
+    finally:
+        session.close()
+
+
+@bp.route("/parts-sold/<int:part_id>/pdf")
+def parts_sold_history_pdf_report(part_id: int):
+    session = _get_session()
+    try:
+        pdf_bytes = build_parts_sold_history_pdf(session, part_id)
+        response = Response(pdf_bytes, mimetype="application/pdf")
+        response.headers["Content-Disposition"] = (
+            f'inline; filename="parts-sold-history-{part_id}.pdf"'
+        )
+        return response
+    finally:
+        session.close()
+
+
+@bp.route("/parts-list/<int:parts_list_id>")
+def parts_list_report(parts_list_id: int):
+    session = _get_session()
+    try:
+        context = _parts_list_context(session, parts_list_id)
+        return render_template_string(_PARTS_LIST_TEMPLATE, **context)
+    finally:
+        session.close()
+
+
+@bp.route("/parts-list/<int:parts_list_id>/pdf")
+def parts_list_pdf_report(parts_list_id: int):
+    session = _get_session()
+    try:
+        pdf_bytes = build_parts_list_pdf(session, parts_list_id)
+        response = Response(pdf_bytes, mimetype="application/pdf")
+        response.headers["Content-Disposition"] = (
+            f'inline; filename="parts-list-{parts_list_id}.pdf"'
+        )
+        return response
+    finally:
+        session.close()
+
+
+@bp.route("/customer-parts-list/<int:customer_id>")
+def customer_parts_list_report(customer_id: int):
+    session = _get_session()
+    try:
+        context = _customer_parts_list_context(session, customer_id)
+        return render_template_string(_CUSTOMER_PARTS_LIST_TEMPLATE, **context)
+    finally:
+        session.close()
+
+
+@bp.route("/customer-parts-list/<int:customer_id>/pdf")
+def customer_parts_list_pdf_report(customer_id: int):
+    session = _get_session()
+    try:
+        pdf_bytes = build_customer_parts_list_pdf(session, customer_id)
+        response = Response(pdf_bytes, mimetype="application/pdf")
+        response.headers["Content-Disposition"] = (
+            f'inline; filename="customer-parts-list-{customer_id}.pdf"'
         )
         return response
     finally:
