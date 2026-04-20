@@ -21,6 +21,7 @@ from ith_webapp.models import (
     Part,
     PartsList,
     PartsSub,
+    Rental,
     Service,
     ServiceSub,
     ServiceTime,
@@ -953,6 +954,34 @@ def build_check_in_pdf(session, check_in_id: int) -> bytes:
     return _build_pdf(pages)
 
 
+def _demo_contract_lines(contract: Rental) -> list[str]:
+    lines = [
+        "Demo Contract",
+        f"Customer: {getattr(contract.customer, 'customer_name', '') or ''}",
+        f"Card Code: {getattr(contract.customer, 'card_code', '') or ''}",
+        f"Tool: {getattr(contract.customer_tools, 'serial_number', '') or ''}",
+        f"Status: {getattr(contract.rental_status, 'name', '') or ''}",
+        f"Contract Date: {contract.rental_date.isoformat()}",
+        f"Return Date: {contract.return_date.isoformat() if contract.return_date else ''}",
+        "",
+        "Agreement",
+        "Customer accepts responsibility for the demo equipment during the loan period.",
+        "",
+        "Signature",
+        "Customer Signature: ____________________",
+        "ITH Representative: ____________________",
+    ]
+    return lines
+
+
+def build_demo_contract_pdf(session, demo_contract_id: int) -> bytes:
+    contract = session.get(Rental, demo_contract_id)
+    if contract is None:
+        raise ValueError(f"Rental {demo_contract_id} not found")
+    pages = _paginate(_demo_contract_lines(contract))
+    return _build_pdf(pages)
+
+
 def build_ith_test_gauge_certificates_pdf(
     session, ith_test_gauge_id: int, variant: str | None = None
 ) -> bytes:
@@ -1338,6 +1367,20 @@ def service_measurements_report(service_id: int):
         response = Response(pdf_bytes, mimetype="application/pdf")
         response.headers["Content-Disposition"] = (
             f'inline; filename="service-measurements-{service_id}.pdf"'
+        )
+        return response
+    finally:
+        session.close()
+
+
+@bp.route("/demo-contract/<int:demo_contract_id>")
+def demo_contract_report(demo_contract_id: int):
+    session = _get_session()
+    try:
+        pdf_bytes = build_demo_contract_pdf(session, demo_contract_id)
+        response = Response(pdf_bytes, mimetype="application/pdf")
+        response.headers["Content-Disposition"] = (
+            f'inline; filename="demo-contract-{demo_contract_id}.pdf"'
         )
         return response
     finally:

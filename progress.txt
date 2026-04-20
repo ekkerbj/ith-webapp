@@ -1,16 +1,16 @@
-2026-04-19: F-046 Basic Quote PDF implemented with BOM sections, static quote pages, report route, tests, and ADR.
-2026-04-19: F-047 Service Invoice PDF implemented with invoice sections, Avatax variant support, report route, tests, and ADR.
-2026-04-19: F-048 Check In Document PDF implemented with tool receipt sections, report route, tests, and ADR.
-2026-04-19: F-049 Packing List PDF implemented with shipment line items, PDF route, tests, and ADR.
-2026-04-19: F-050 Commercial Invoice and SLI PDF implemented with shipping document sections, PDF route, tests, and ADR.
-2026-04-19: F-051 Calibration and Test Certificates PDF implemented with deterministic gauge certificate pages, report route, tests, and ADR.
-2026-04-19: F-052 Service Measurements and Test Reports PDF implemented with service measurement report pages, route, tests, and ADR.
-2026-04-19: F-053 Customer Reports implemented with HTML detail/group/pricing/inventory routes, tests, and ADR.
-2026-04-19: F-054 Field Service Reports implemented with PDF report, summary, and customer-facing timesheet routes, tests, and ADR.
-2026-04-19: F-055 SAP Financial Summaries implemented with server-rendered HTML breakdown tables, tests, and ADR.
-2026-04-19: F-056 Parts Catalog implemented with HTML/PDF report surfaces, BOM and cross-reference sections, tests, and ADR.
-2026-04-19: F-057 Open Repair List and Shop Data implemented with HTML report routes, tests, and ADR.
-2026-04-19: F-058 Barcode Generation - 1D implemented with SVG barcode service, tests, dependency update, and ADR.
-2026-04-19: F-059 Barcode Generation - 2D implemented with PDF417 SVG output, tests, dependency update, and ADR.
-2026-04-19: F-060 Part Labels implemented with printable labels route, barcode SVG, tests, and ADR.
-2026-04-19: F-061 ITH Test Gauge Label Printing implemented with calibration and certification label routes, barcode SVG, tests, and ADR.
+1. 2026-04-19: F-049 Packing List PDF implemented with shipment line items, PDF route, tests, and ADR.
+2. 2026-04-19: F-050 Commercial Invoice and SLI PDF implemented with shipping document sections, PDF route, tests, and ADR.
+3. 2026-04-19: F-051 Calibration and Test Certificates PDF implemented with deterministic gauge certificate pages, report route, tests, and ADR.
+4. 2026-04-19: F-052 Service Measurements and Test Reports PDF implemented with service measurement report pages, route, tests, and ADR.
+5. 2026-04-19: F-053 Customer Reports implemented with HTML detail/group/pricing/inventory routes, tests, and ADR.
+6. 2026-04-19: F-054 Field Service Reports implemented with PDF report, summary, and customer-facing timesheet routes, tests, and ADR.
+7. 2026-04-19: F-055 SAP Financial Summaries implemented with server-rendered HTML breakdown tables, tests, and ADR.
+8. 2026-04-19: F-056 Parts Catalog implemented with HTML/PDF report surfaces, BOM and cross-reference sections, tests, and ADR.
+9. 2026-04-19: F-057 Open Repair List and Shop Data implemented with HTML report routes, tests, and ADR.
+10. 2026-04-19: F-058 Barcode Generation - 1D implemented with SVG barcode service, tests, dependency update, and ADR.
+11. 2026-04-19: F-059 Barcode Generation - 2D implemented with PDF417 SVG output, tests, dependency update, and ADR.
+12. 2026-04-19: F-060 Part Labels implemented with printable labels route, barcode SVG, tests, and ADR.
+13. 2026-04-19: F-061 ITH Test Gauge Label Printing implemented with calibration and certification label routes, barcode SVG, tests, and ADR.
+14. 2026-04-19: F-062 Customer-Specific Barcode Labels implemented with CAT and ZF packing list label routes, barcode SVG, tests, and ADR.
+15. 2026-04-19: F-063 Customer Mailing and Address Labels implemented with mailing/address/SAP label routes, tests, and ADR.
+16. 2026-04-19: F-064 Demo Contract implemented with demo-contract rental alias routes, PDF report, tests, and ADR.

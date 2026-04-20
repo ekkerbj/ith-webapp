@@ -54,7 +54,14 @@ def _firebase_sign_in(api_key: str, email: str, password: str) -> dict[str, str]
         raise ValueError(detail or "Firebase authentication failed") from exc
 
 
-SALES_BLUEPRINTS = {"customers", "consignment_list", "order_confirmations", "parts", "projects"}
+SALES_BLUEPRINTS = {
+    "customers",
+    "consignment_list",
+    "demo_contracts",
+    "order_confirmations",
+    "parts",
+    "projects",
+}
 TECHNICIAN_BLUEPRINTS = {
     "field_services",
     "ith_test_gauges",
@@ -151,6 +158,7 @@ def create_app(testing: bool = False) -> Flask:
                 "Services",
                 [
                     ("Projects", "projects.project_list"),
+                    ("Demo Contracts", "demo_contracts.demo_contract_list"),
                     ("Order Confirmations", "order_confirmations.order_confirmation_list"),
                 ],
             ),
@@ -302,6 +310,9 @@ def create_app(testing: bool = False) -> Flask:
 
     from ith_webapp.views.rentals import bp as rentals_bp
     app.register_blueprint(rentals_bp)
+
+    from ith_webapp.views.demo_contracts import bp as demo_contracts_bp
+    app.register_blueprint(demo_contracts_bp)
 
     from ith_webapp.views.field_service import bp as field_services_bp
     app.register_blueprint(field_services_bp)
