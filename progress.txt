@@ -1,5 +1,3 @@
-2026-04-19: F-042 Role-Based Access Control implemented with session role resolution, request-time authorization, tests, and ADR.
-2026-04-19: F-043 Navigation and Switchboard implemented with a sectioned root landing page, route links, tests, and ADR.
 2026-04-19: F-044 CSS Styling and Responsive Layout implemented with shared login shell, vanilla responsive stylesheet, tests, and ADR.
 
 2026-04-19: F-045 Service Multi Quote PDF implemented with in-repo PDF generation, report route, tests, and ADR.
@@ -15,3 +13,4 @@
 2026-04-19: F-055 SAP Financial Summaries implemented with server-rendered HTML breakdown tables, tests, and ADR.
 2026-04-19: F-056 Parts Catalog implemented with HTML/PDF report surfaces, BOM and cross-reference sections, tests, and ADR.
 2026-04-19: F-057 Open Repair List and Shop Data implemented with HTML report routes, tests, and ADR.
+2026-04-19: F-058 Barcode Generation - 1D implemented with SVG barcode service, tests, dependency update, and ADR.
