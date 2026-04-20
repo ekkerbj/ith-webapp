@@ -44,6 +44,9 @@ def create_app(testing: bool = False) -> Flask:
     from ith_webapp.views.order_confirmations import bp as order_confirmations_bp
     app.register_blueprint(order_confirmations_bp)
 
+    from ith_webapp.views.audit_trail import bp as audit_trail_bp
+    app.register_blueprint(audit_trail_bp)
+
     from ith_webapp.views.ith_test_gauges import bp as ith_test_gauges_bp
     app.register_blueprint(ith_test_gauges_bp)
 

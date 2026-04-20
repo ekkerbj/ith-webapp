@@ -34,6 +34,7 @@ from ith_webapp.models.site_wind_turbine import SiteWindTurbine  # noqa: F401
 from ith_webapp.models.site_wind_gas import SiteWindGas  # noqa: F401
 from ith_webapp.models.wind_turbine_lead import WindTurbineLead  # noqa: F401
 from ith_webapp.models.wind_turbine_lead_detail import WindTurbineLeadDetail  # noqa: F401
+from ith_webapp.models.audit_trail import AuditTrail  # noqa: F401
 
 __all__ = [
     "Customer",
@@ -69,4 +70,5 @@ __all__ = [
     "SiteWindGas",
     "WindTurbineLead",
     "WindTurbineLeadDetail",
+    "AuditTrail",
 ]

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Trail - {{ table_name }} {{ record_id }} - ITH{% endblock %}
+
+{% block content %}
+<h1>Audit Trail for {{ table_name }} #{{ record_id }}</h1>
+
+{% if entries %}
+<table>
+    <thead>
+        <tr>
+            <th>Action</th>
+            <th>Field</th>
+            <th>Old Value</th>
+            <th>New Value</th>
+            <th>Changed At</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for entry in entries %}
+        <tr>
+            <td>{{ entry.action }}</td>
+            <td>{{ entry.field_name }}</td>
+            <td>{{ entry.old_value or "" }}</td>
+            <td>{{ entry.new_value or "" }}</td>
+            <td>{{ entry.changed_at }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No audit history found.</p>
+{% endif %}
+
+<p><a href="{{ url_for('customers.customer_detail', customer_id=record_id) }}">Back to customer</a></p>
+{% endblock %}

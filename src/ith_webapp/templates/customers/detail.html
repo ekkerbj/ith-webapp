@@ -33,4 +33,5 @@
 </table>
 
 <a href="{{ url_for('customers.customer_list') }}">Back to list</a>
+<a href="{{ url_for('audit_trail.audit_history', table_name='customer', record_id=customer.customer_id) }}">Audit history</a>
 {% endblock %}
