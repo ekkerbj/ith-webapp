@@ -4,7 +4,17 @@ from decimal import Decimal
 
 from flask import Blueprint, Response, current_app, request
 
-from ith_webapp.models import CheckIn, CheckInSub, Part, PartsList, PartsSub, Service, ServiceSub
+from ith_webapp.models import (
+    CheckIn,
+    CheckInSub,
+    PackingList,
+    PackingListSub,
+    Part,
+    PartsList,
+    PartsSub,
+    Service,
+    ServiceSub,
+)
 
 bp = Blueprint("reports", __name__, url_prefix="/reports")
 
@@ -157,6 +167,31 @@ def _basic_quote_lines(
     return lines
 
 
+def _packing_list_lines(packing_list: PackingList, subs: list[PackingListSub]) -> list[str]:
+    lines = [
+        "Packing List",
+        f"Packing List ID: {packing_list.id}",
+        "",
+        "Line Items",
+    ]
+    if not subs:
+        lines.append("(none)")
+    else:
+        for sub in subs:
+            lines.extend(
+                [
+                    f"Line {sub.id}",
+                    f"Harm Number: {sub.harm_number or ''}",
+                    f"EECN: {sub.EECN or ''}",
+                    f"DDTC: {sub.DDTC or ''}",
+                    f"COO: {sub.COO or ''}",
+                    f"In Bond Code: {sub.in_bond_code or ''}",
+                    "",
+                ]
+            )
+    return lines
+
+
 def _check_in_lines(check_in: CheckIn, subs: list[CheckInSub]) -> list[str]:
     lines = [
         "Check In Document",
@@ -306,6 +341,20 @@ def build_basic_quote_pdf(session, parts_list_id: int, region: str | None = None
     return _build_pdf(pages)
 
 
+def build_packing_list_pdf(session, packing_list_id: int) -> bytes:
+    packing_list = session.get(PackingList, packing_list_id)
+    if packing_list is None:
+        raise ValueError(f"PackingList {packing_list_id} not found")
+    subs = (
+        session.query(PackingListSub)
+        .filter(PackingListSub.packing_list_id == packing_list_id)
+        .order_by(PackingListSub.id)
+        .all()
+    )
+    pages = _paginate(_packing_list_lines(packing_list, subs))
+    return _build_pdf(pages)
+
+
 def build_check_in_pdf(session, check_in_id: int) -> bytes:
     check_in = session.get(CheckIn, check_in_id)
     if check_in is None:
@@ -363,6 +412,20 @@ def basic_quote_report(parts_list_id: int):
         response = Response(pdf_bytes, mimetype="application/pdf")
         response.headers["Content-Disposition"] = (
             f'inline; filename="basic-quote-{parts_list_id}.pdf"'
+        )
+        return response
+    finally:
+        session.close()
+
+
+@bp.route("/packing-list/<int:packing_list_id>")
+def packing_list_report(packing_list_id: int):
+    session = _get_session()
+    try:
+        pdf_bytes = build_packing_list_pdf(session, packing_list_id)
+        response = Response(pdf_bytes, mimetype="application/pdf")
+        response.headers["Content-Disposition"] = (
+            f'inline; filename="packing-list-{packing_list_id}.pdf"'
         )
         return response
     finally:

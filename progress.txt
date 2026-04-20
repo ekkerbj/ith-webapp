@@ -1,4 +1,3 @@
-20. 2026-04-19: F-034 ITH Test Gauge Tracking implemented with gauge/type models, migration, CRUD views, tests, and ADR.
 21. 2026-04-19: F-035 Wind and Gas Turbine Site Tracking implemented with site/lead models, generic CRUD views, migration, tests, and ADR.
 2026-04-19: F-036 Audit Trail implemented with tblaudittrail model, service, customer hooks, audit history view, migration, and tests.
 2026-04-19: F-037 Null Safety Utilities implemented with Nnz/Zero helpers, unit tests, ADR, and prd.json updated.
@@ -14,3 +13,4 @@
 2026-04-19: F-046 Basic Quote PDF implemented with BOM sections, static quote pages, report route, tests, and ADR.
 2026-04-19: F-047 Service Invoice PDF implemented with invoice sections, Avatax variant support, report route, tests, and ADR.
 2026-04-19: F-048 Check In Document PDF implemented with tool receipt sections, report route, tests, and ADR.
+2026-04-19: F-049 Packing List PDF implemented with shipment line items, PDF route, tests, and ADR.
