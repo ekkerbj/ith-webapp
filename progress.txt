@@ -1,5 +1,3 @@
-22. 2026-04-20: F-070 Customer Form Validation and Flash Messaging implemented with server-side validation, flash feedback, inline errors, tests, and ADR.
-23. 2026-04-20: F-071 MonthCompare Date Filtering implemented with shared current-month helper, list-view filters, tests, and ADR.
 24. 2026-04-20: F-072 Item Usage Analytics implemented with SAP item usage report, repository protocol, tests, and ADR.
 25. 2026-04-20: F-073 Customer-Specific Pricing Display implemented with SAP-backed customer/part price comparison report, integrity checks, tests, and ADR.
 26. 2026-04-20: F-074 Repair Time Analysis implemented with grouped service/technician HTML report, tests, and ADR.
@@ -14,3 +12,5 @@
 35. 2026-04-20: F-083 Report - Names and CC Form (PDF) implemented with customer contact names and credit card authorization form PDF routes, tests, and ADR.
 36. 2026-04-20: F-084 Report - Order Confirmation (PDF) implemented with order confirmation PDF route, tests, and ADR.
 37. 2026-04-20: F-085 Parts Sold and BOM Reports implemented with parts sold history, assembly BOM, and customer-specific parts list HTML/PDF routes, tests, and ADR.
+38. 2026-04-20: F-086 Regional Localization implemented with region-aware currency formatting for Brazil and Mexico quote/invoice PDFs, tests, and ADR.
+39. 2026-04-20: F-087 Customer-Specific Report Variants implemented with deterministic Alstom and Mortenson report titles, tests, and ADR.

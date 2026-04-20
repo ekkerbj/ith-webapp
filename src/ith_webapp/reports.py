@@ -49,12 +49,18 @@ def _escape_pdf_text(value: str) -> str:
     return value.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
 
 
-def _format_money(value) -> str:
+def _format_money(value, region: str | None = None) -> str:
     if value is None:
         return ""
-    if isinstance(value, Decimal):
-        return f"{value:.2f}"
-    return f"{value:.2f}"
+    amount = value if isinstance(value, Decimal) else Decimal(str(value))
+    if region:
+        region_code = region.upper()
+        if region_code == "BR":
+            formatted = f"{amount:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            return f"R$ {formatted}"
+        if region_code == "MX":
+            return f"MX$ {amount:,.2f}"
+    return f"{amount:.2f}"
 
 
 def _variant_label(region: str | None) -> str:
@@ -64,15 +70,25 @@ def _variant_label(region: str | None) -> str:
     return variants.get(region.upper(), "Standard")
 
 
+def _customer_variant_title(customer_name: str | None, default_title: str) -> str:
+    normalized = (customer_name or "").strip().casefold()
+    if "alstom" in normalized:
+        return "Alstom Multi Quote"
+    if "mortenson" in normalized:
+        return "Mortenson Part Pics"
+    return default_title
+
+
 def _section_rows(subs: list[ServiceSub], item_types: set[str]) -> list[ServiceSub]:
     return [sub for sub in subs if (sub.item_type or "").upper() in item_types]
 
 
 def _report_lines(service: Service, subs: list[ServiceSub], region: str | None) -> list[str]:
+    customer_name = getattr(service.customer, "customer_name", "") or ""
     lines = [
-        "Service Multi Quote",
+        _customer_variant_title(customer_name, "Service Multi Quote"),
         f"Variant: {_variant_label(region)}",
-        f"Customer: {getattr(service.customer, 'customer_name', '') or ''}",
+        f"Customer: {customer_name}",
         f"Card Code: {service.cardcode or ''}",
         f"Service ID: {service.service_id}",
         "",
@@ -92,7 +108,7 @@ def _report_lines(service: Service, subs: list[ServiceSub], region: str | None) 
                 lines.append(
                     " - "
                     f"Type {sub.item_type} | Qty {sub.quantity} | "
-                    f"Price {_format_money(sub.price)} | Cost {_format_money(sub.cost)}"
+                    f"Price {_format_money(sub.price, region)} | Cost {_format_money(sub.cost, region)}"
                 )
         lines.append("")
     lines.extend(
@@ -121,7 +137,7 @@ def _service_invoice_lines(
         f"Customer: {getattr(service.customer, 'customer_name', '') or ''}",
         f"Card Code: {service.cardcode or ''}",
         f"Service ID: {service.service_id}",
-        f"Invoice Total: {_format_money(service.price)}",
+        f"Invoice Total: {_format_money(service.price, region)}",
         "",
     ]
     sections = [
@@ -139,7 +155,7 @@ def _service_invoice_lines(
                 lines.append(
                     " - "
                     f"Type {sub.item_type} | Qty {sub.quantity} | "
-                    f"Price {_format_money(sub.price)} | Cost {_format_money(sub.cost)}"
+                    f"Price {_format_money(sub.price, region)} | Cost {_format_money(sub.cost, region)}"
                 )
         lines.append("")
     return lines
@@ -414,8 +430,9 @@ def _customer_parts_list_context(session, customer_id: int) -> dict[str, object]
 def _customer_parts_list_lines(context: dict[str, object]) -> list[str]:
     customer = context["customer"]
     rows: list[dict[str, object]] = context["rows"]
+    title = _customer_variant_title(customer.customer_name, "Customer-Specific Parts List")
     lines = [
-        "Customer-Specific Parts List",
+        title,
         f"Customer: {customer.customer_name or ''}",
         f"Card Code: {customer.card_code or ''}",
         f"Customer ID: {customer.customer_id}",
