@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from flask import Blueprint, Response, current_app, request
 
-from ith_webapp.models import Part, PartsList, PartsSub, Service, ServiceSub
+from ith_webapp.models import CheckIn, CheckInSub, Part, PartsList, PartsSub, Service, ServiceSub
 
 bp = Blueprint("reports", __name__, url_prefix="/reports")
 
@@ -157,6 +157,30 @@ def _basic_quote_lines(
     return lines
 
 
+def _check_in_lines(check_in: CheckIn, subs: list[CheckInSub]) -> list[str]:
+    lines = [
+        "Check In Document",
+        "Tool Receipt Record",
+        f"Customer: {getattr(check_in.customer, 'customer_name', '') or ''}",
+        f"Received: {check_in.received_at.isoformat()}",
+        f"Description: {check_in.description or ''}",
+        "",
+        "Tools Received",
+    ]
+    if not subs:
+        lines.append("(none)")
+    else:
+        for sub in subs:
+            lines.append(
+                " - "
+                f"Tool {sub.tool_id} | Inspected {'Yes' if sub.inspected else 'No'} | "
+                f"Quoted {'Yes' if sub.quoted else 'No'} | "
+                f"Approved {'Yes' if sub.approved else 'No'} | "
+                f"Closed {'Yes' if sub.closed else 'No'}"
+            )
+    return lines
+
+
 def _paginate(lines: list[str], lines_per_page: int = 24) -> list[list[str]]:
     pages: list[list[str]] = []
     current: list[str] = []
@@ -282,6 +306,20 @@ def build_basic_quote_pdf(session, parts_list_id: int, region: str | None = None
     return _build_pdf(pages)
 
 
+def build_check_in_pdf(session, check_in_id: int) -> bytes:
+    check_in = session.get(CheckIn, check_in_id)
+    if check_in is None:
+        raise ValueError(f"CheckIn {check_in_id} not found")
+    subs = (
+        session.query(CheckInSub)
+        .filter(CheckInSub.check_in_id == check_in_id)
+        .order_by(CheckInSub.id)
+        .all()
+    )
+    pages = _paginate(_check_in_lines(check_in, subs))
+    return _build_pdf(pages)
+
+
 @bp.route("/service-multi-quote/<int:service_id>")
 def service_multi_quote_report(service_id: int):
     session = _get_session()
@@ -325,6 +363,20 @@ def basic_quote_report(parts_list_id: int):
         response = Response(pdf_bytes, mimetype="application/pdf")
         response.headers["Content-Disposition"] = (
             f'inline; filename="basic-quote-{parts_list_id}.pdf"'
+        )
+        return response
+    finally:
+        session.close()
+
+
+@bp.route("/check-in/<int:check_in_id>")
+def check_in_report(check_in_id: int):
+    session = _get_session()
+    try:
+        pdf_bytes = build_check_in_pdf(session, check_in_id)
+        response = Response(pdf_bytes, mimetype="application/pdf")
+        response.headers["Content-Disposition"] = (
+            f'inline; filename="check-in-{check_in_id}.pdf"'
         )
         return response
     finally:
