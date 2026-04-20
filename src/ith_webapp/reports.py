@@ -15,6 +15,7 @@ from ith_webapp.models import (
     CustomerApplicationSpecs,
     ConsignmentList,
     CustomerTools,
+    CustomerToolsSub,
     ITHTestGauge,
     FieldService,
     ServiceMeasurements,
@@ -747,6 +748,30 @@ def _customer_tools_rows(session) -> list[dict[str, object]]:
     ]
 
 
+def _customer_tools_detail_lines(
+    tool: CustomerTools, unit: Unit | None, subs: list[CustomerToolsSub]
+) -> list[str]:
+    lines = [
+        "Toolset Detail Report",
+        f"Customer: {getattr(tool.customer, 'customer_name', '') or ''}",
+        f"Serial Number: {tool.serial_number or ''}",
+        f"Fab Number: {tool.fab_number or ''}",
+        f"Model: {tool.model_info or ''}",
+        f"Unit: {unit.name if unit else ''}",
+        "",
+        "Component List",
+    ]
+    if not subs:
+        lines.append("(none)")
+    else:
+        for sub in subs:
+            lines.append(
+                f" - {sub.sub_type or ''}"
+                + (f" | {sub.value}" if sub.value else "")
+            )
+    return lines
+
+
 def _open_repair_list_rows(session) -> list[dict[str, object]]:
     rows = (
         session.query(CheckInSub, CheckIn, Customer)
@@ -1243,6 +1268,21 @@ def build_service_measurements_pdf(session, service_id: int) -> bytes:
     return _build_pdf(pages)
 
 
+def build_customer_tools_pdf(session, customer_tools_id: int) -> bytes:
+    tool = session.get(CustomerTools, customer_tools_id)
+    if tool is None:
+        raise ValueError(f"CustomerTools {customer_tools_id} not found")
+    subs = (
+        session.query(CustomerToolsSub)
+        .filter(CustomerToolsSub.tool_id == customer_tools_id)
+        .order_by(CustomerToolsSub.id)
+        .all()
+    )
+    unit = session.get(Unit, tool.unit_id) if tool.unit_id is not None else None
+    pages = _paginate(_customer_tools_detail_lines(tool, unit, subs))
+    return _build_pdf(pages)
+
+
 @bp.route("/parts/<int:part_id>")
 def parts_catalog_report(part_id: int):
     session = _get_session()
@@ -1677,6 +1717,20 @@ def service_measurements_report(service_id: int):
         response = Response(pdf_bytes, mimetype="application/pdf")
         response.headers["Content-Disposition"] = (
             f'inline; filename="service-measurements-{service_id}.pdf"'
+        )
+        return response
+    finally:
+        session.close()
+
+
+@bp.route("/customer-tools/<int:customer_tools_id>")
+def customer_tools_report(customer_tools_id: int):
+    session = _get_session()
+    try:
+        pdf_bytes = build_customer_tools_pdf(session, customer_tools_id)
+        response = Response(pdf_bytes, mimetype="application/pdf")
+        response.headers["Content-Disposition"] = (
+            f'inline; filename="customer-tools-{customer_tools_id}.pdf"'
         )
         return response
     finally:
