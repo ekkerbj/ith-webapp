@@ -649,8 +649,84 @@ def _customer_responsibility_groups(session) -> list[dict[str, object]]:
     ]
 
 
-def _customer_pricing_rows(session) -> list[Customer]:
-    return session.query(Customer).order_by(Customer.customer_name).all()
+def _customer_pricing_rows(session) -> list[dict[str, object]]:
+    customer_repository = current_app.config.get("SAP_CUSTOMER_REPOSITORY")
+    item_repository = current_app.config.get("SAP_ITEM_REPOSITORY")
+    price_repository = current_app.config.get("SAP_PRICE_REPOSITORY")
+
+    customers = session.query(Customer).order_by(Customer.customer_name).all()
+    parts = session.query(Part).order_by(Part.part_number).all()
+    if customer_repository is None or item_repository is None or price_repository is None:
+        return [
+            {
+                "customer_name": customer.customer_name or "",
+                "card_code": customer.card_code or "",
+                "price_list_num": customer.price_list_num,
+                "multiplier": customer.multiplier,
+                "active": customer.active,
+                "item_code": "",
+                "item_name": "",
+                "standard_price": None,
+                "specific_price": None,
+                "integrity": "",
+            }
+            for customer in customers
+        ]
+
+    rows: list[dict[str, object]] = []
+    for customer in customers:
+        card_code = customer.card_code or ""
+        customer_record = (
+            customer_repository.get_customer(card_code) if card_code else None
+        )
+        for part in parts:
+            item_code = part.part_number
+            item_record = item_repository.get_item(item_code)
+            standard_price = (
+                price_repository.get_price_list_price(customer.price_list_num, item_code)
+                if customer.price_list_num is not None
+                else None
+            )
+            specific_price = (
+                price_repository.get_bp_price(card_code, item_code) if card_code else None
+            )
+            if specific_price is None and standard_price is None:
+                continue
+            rows.append(
+                {
+                    "customer_name": (
+                        getattr(customer_record, "card_name", None)
+                        or customer.customer_name
+                        or ""
+                    ),
+                    "card_code": card_code,
+                    "price_list_num": customer.price_list_num,
+                    "multiplier": customer.multiplier,
+                    "active": customer.active,
+                    "item_code": getattr(item_record, "item_code", None) or item_code,
+                    "item_name": getattr(item_record, "item_name", None)
+                    or part.description
+                    or "",
+                    "standard_price": standard_price,
+                    "specific_price": specific_price,
+                    "integrity": _customer_pricing_integrity(
+                        specific_price, standard_price
+                    ),
+                }
+            )
+    return rows
+
+
+def _customer_pricing_integrity(
+    specific_price: Decimal | None, standard_price: Decimal | None
+) -> str:
+    if specific_price is None and standard_price is None:
+        return "Missing"
+    if specific_price is None:
+        return "Standard only"
+    if standard_price is None:
+        return "Specific only"
+    return "OK" if specific_price <= standard_price else "Check"
 
 
 def _customer_tools_rows(session) -> list[dict[str, object]]:
@@ -1103,15 +1179,30 @@ _CUSTOMER_PRICING_TEMPLATE = """
 <h1>Customer Pricing Report</h1>
 <table>
   <thead>
-    <tr><th>Name</th><th>Card Code</th><th>Multiplier</th><th>Active</th></tr>
+    <tr>
+      <th>Customer</th>
+      <th>Card Code</th>
+      <th>Price List</th>
+      <th>Multiplier</th>
+      <th>Active</th>
+      <th>Item</th>
+      <th>Standard Price (ITM1)</th>
+      <th>Customer Specific Price (OSPP)</th>
+      <th>Price Integrity</th>
+    </tr>
   </thead>
   <tbody>
-    {% for customer in customers %}
+    {% for row in customers %}
     <tr>
-      <td>{{ customer.customer_name }}</td>
-      <td>{{ customer.card_code or "" }}</td>
-      <td>{{ customer.multiplier or "" }}</td>
-      <td>{{ "Yes" if customer.active else "No" }}</td>
+      <td>{{ row.customer_name }}</td>
+      <td>{{ row.card_code }}</td>
+      <td>{{ row.price_list_num or "" }}</td>
+      <td>{{ row.multiplier or "" }}</td>
+      <td>{{ "Yes" if row.active else "No" if row.active is not none else "" }}</td>
+      <td>{{ row.item_code }}{% if row.item_name %} | {{ row.item_name }}{% endif %}</td>
+      <td>{{ row.standard_price if row.standard_price is not none else "" }}</td>
+      <td>{{ row.specific_price if row.specific_price is not none else "" }}</td>
+      <td>{{ row.integrity }}</td>
     </tr>
     {% endfor %}
   </tbody>

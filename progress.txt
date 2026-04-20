@@ -1,4 +1,3 @@
-9. 2026-04-19: F-057 Open Repair List and Shop Data implemented with HTML report routes, tests, and ADR.
 10. 2026-04-19: F-058 Barcode Generation - 1D implemented with SVG barcode service, tests, dependency update, and ADR.
 11. 2026-04-19: F-059 Barcode Generation - 2D implemented with PDF417 SVG output, tests, dependency update, and ADR.
 12. 2026-04-19: F-060 Part Labels implemented with printable labels route, barcode SVG, tests, and ADR.
@@ -14,3 +13,4 @@
 22. 2026-04-20: F-070 Customer Form Validation and Flash Messaging implemented with server-side validation, flash feedback, inline errors, tests, and ADR.
 23. 2026-04-20: F-071 MonthCompare Date Filtering implemented with shared current-month helper, list-view filters, tests, and ADR.
 24. 2026-04-20: F-072 Item Usage Analytics implemented with SAP item usage report, repository protocol, tests, and ADR.
+25. 2026-04-20: F-073 Customer-Specific Pricing Display implemented with SAP-backed customer/part price comparison report, integrity checks, tests, and ADR.

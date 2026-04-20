@@ -4,8 +4,14 @@ from ith_webapp.models import (
     CustomerApplicationSpecs,
     CustomerMarket,
     CustomerTools,
+    Part,
     Market,
     Unit,
+)
+from decimal import Decimal
+from ith_webapp.repositories.sap_repository import (
+    SapCustomerRecord,
+    SapItemRecord,
 )
 
 
@@ -132,5 +138,59 @@ def test_customer_reports_pricing_and_tools_inventory(app):
         assert b"SN-1" in tools_response.data
         assert b"FAB-9" in tools_response.data
         assert b"Press" in tools_response.data
+    finally:
+        session.close()
+
+
+def test_customer_pricing_report_shows_specific_and_standard_prices(app):
+    factory = app.config["SESSION_FACTORY"]
+    session = factory()
+    try:
+        customer = Customer(customer_name="Acme", card_code="C-100", price_list_num=3)
+        part = Part(part_number="A-100", description="Valve")
+        session.add_all([customer, part])
+        session.commit()
+
+        class CustomerRepository:
+            def get_customer(self, card_code: str):
+                return SapCustomerRecord(
+                    card_code=card_code,
+                    card_name="Acme",
+                    price_list_num=3,
+                )
+
+        class ItemRepository:
+            def get_item(self, item_code: str):
+                return SapItemRecord(
+                    item_code=item_code,
+                    item_name="Valve",
+                    purchase_price=Decimal("10.00"),
+                )
+
+        class PriceRepository:
+            def get_bp_price(self, card_code: str, item_code: str):
+                if card_code == "C-100" and item_code == "A-100":
+                    return Decimal("11.00")
+                return None
+
+            def get_price_list_price(self, price_list_num: int, item_code: str):
+                if price_list_num == 3 and item_code == "A-100":
+                    return Decimal("12.00")
+                return None
+
+        app.config["SAP_CUSTOMER_REPOSITORY"] = CustomerRepository()
+        app.config["SAP_ITEM_REPOSITORY"] = ItemRepository()
+        app.config["SAP_PRICE_REPOSITORY"] = PriceRepository()
+
+        response = app.test_client().get("/reports/customers/pricing")
+
+        assert response.status_code == 200
+        body = response.get_data(as_text=True)
+        assert "Customer Pricing Report" in body
+        assert "Acme" in body
+        assert "A-100" in body
+        assert "11.00" in body
+        assert "12.00" in body
+        assert "OK" in body
     finally:
         session.close()
