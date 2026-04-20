@@ -160,6 +160,7 @@ def create_app(testing: bool = False) -> Flask:
                     ("Projects", "projects.project_list"),
                     ("Demo Contracts", "demo_contracts.demo_contract_list"),
                     ("Order Confirmations", "order_confirmations.order_confirmation_list"),
+                    ("Warranty Claims", "warranty_claims.warranty_claim_list"),
                 ],
             ),
             (
@@ -322,6 +323,9 @@ def create_app(testing: bool = False) -> Flask:
 
     from ith_webapp.views.order_confirmations import bp as order_confirmations_bp
     app.register_blueprint(order_confirmations_bp)
+
+    from ith_webapp.views.warranty_claims import bp as warranty_claims_bp
+    app.register_blueprint(warranty_claims_bp)
 
     from ith_webapp.views.audit_trail import bp as audit_trail_bp
     app.register_blueprint(audit_trail_bp)

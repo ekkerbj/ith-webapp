@@ -17,6 +17,7 @@ from ith_webapp.models.field_service_sub import FieldServiceSub  # noqa: F401
 from ith_webapp.models.service_sub import ServiceSub  # noqa: F401
 from ith_webapp.models.service_time import ServiceTime  # noqa: F401
 from ith_webapp.models.service_measurements import ServiceMeasurements  # noqa: F401
+from ith_webapp.models.warranty_claim import WarrantyClaim, WarrantyClaimQuote  # noqa: F401
 from ith_webapp.models.packing_list_sub import PackingListSub  # noqa: F401
 from ith_webapp.models.packing_list import PackingList  # noqa: F401
 from ith_webapp.models.part import Part  # noqa: F401
@@ -52,6 +53,11 @@ __all__ = [
     "FieldServiceStatus",
     "FieldServiceType",
     "FieldServiceSub",
+    "ServiceSub",
+    "ServiceTime",
+    "ServiceMeasurements",
+    "WarrantyClaim",
+    "WarrantyClaimQuote",
     "PackingList",
     "PackingListSub",
     "Part",
