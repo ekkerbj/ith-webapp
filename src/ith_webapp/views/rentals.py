@@ -1,6 +1,7 @@
 from flask import Blueprint, current_app, redirect, render_template, request, url_for
 
 from ith_webapp.models.rental import Rental
+from ith_webapp.services.pagination import paginate_query
 
 bp = Blueprint("rentals", __name__, url_prefix="/rentals")
 
@@ -14,8 +15,38 @@ def _get_session():
 def rental_list():
     session = _get_session()
     try:
-        items = session.query(Rental).order_by(Rental.rental_id).all()
-        return render_template("rentals/list.html", items=items)
+        items, pagination = paginate_query(
+            session.query(Rental).order_by(Rental.rental_id),
+            "rentals.rental_list",
+            request.args,
+            request.args.get("page", 1, type=int),
+            request.args.get(
+                "page_size",
+                current_app.config["LIST_PAGE_SIZE"],
+                type=int,
+            ),
+        )
+        rows = [
+            {
+                "url": url_for("rentals.rental_detail", rental_id=item.rental_id),
+                "values": [
+                    getattr(item.customer, "customer_name", "") or "",
+                    getattr(item.customer_tools, "serial_number", "") or "",
+                    getattr(item.rental_status, "name", "") or "",
+                    item.rental_date,
+                ],
+            }
+            for item in items
+        ]
+        return render_template(
+            "crud/list.html",
+            title="Rentals",
+            heading="Rentals",
+            headers=("Customer", "Tool", "Status", "Rental Date"),
+            rows=rows,
+            pagination=pagination,
+            empty_message="No rentals found.",
+        )
     finally:
         session.close()
 

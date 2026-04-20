@@ -9,11 +9,12 @@ from flask import (
     request,
     url_for,
 )
-from sqlalchemy import select
+from sqlalchemy import or_
 
 from ith_webapp.models.customer import Customer
 from ith_webapp.models.customer_address import CustomerAddress
 from ith_webapp.repositories.customer_repository import CustomerRepository
+from ith_webapp.services.pagination import paginate_query
 from ith_webapp.services.audit_trail import record_audit_change
 
 bp = Blueprint("customers", __name__, url_prefix="/customers")
@@ -243,14 +244,46 @@ def customer_list():
     session = _get_session()
     try:
         query = (request.args.get("q") or "").strip()
-        stmt = select(Customer).order_by(Customer.customer_id)
+        items_query = session.query(Customer)
         if query:
             like = f"%{query}%"
-            stmt = stmt.where(
-                Customer.customer_name.ilike(like) | Customer.card_code.ilike(like)
+            items_query = items_query.filter(
+                or_(
+                    Customer.customer_name.ilike(like),
+                    Customer.card_code.ilike(like),
+                )
             )
-        customers = list(session.scalars(stmt).all())
-        return render_template("customers/list.html", customers=customers)
+        items, pagination = paginate_query(
+            items_query.order_by(Customer.customer_id),
+            "customers.customer_list",
+            request.args,
+            request.args.get("page", 1, type=int),
+            request.args.get(
+                "page_size",
+                current_app.config["LIST_PAGE_SIZE"],
+                type=int,
+            ),
+        )
+        rows = [
+            {
+                "url": url_for("customers.customer_detail", customer_id=item.customer_id),
+                "values": [
+                    item.customer_name or "",
+                    item.card_code or "",
+                    "Yes" if item.active else "No",
+                ],
+            }
+            for item in items
+        ]
+        return render_template(
+            "crud/list.html",
+            title="Customers",
+            heading="Customers",
+            headers=("Name", "Card Code", "Active"),
+            rows=rows,
+            pagination=pagination,
+            empty_message="No customers found.",
+        )
     finally:
         session.close()
 

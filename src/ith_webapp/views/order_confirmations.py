@@ -1,6 +1,7 @@
 from flask import Blueprint, current_app, redirect, render_template, request, url_for
 
 from ith_webapp.models.order_confirmation import OrderConfirmation
+from ith_webapp.services.pagination import paginate_query
 
 bp = Blueprint("order_confirmations", __name__, url_prefix="/order-confirmations")
 
@@ -14,12 +15,42 @@ def _get_session():
 def order_confirmation_list():
     session = _get_session()
     try:
-        items = (
+        items, pagination = paginate_query(
             session.query(OrderConfirmation)
             .order_by(OrderConfirmation.order_confirmation_id)
-            .all()
+            ,
+            "order_confirmations.order_confirmation_list",
+            request.args,
+            request.args.get("page", 1, type=int),
+            request.args.get(
+                "page_size",
+                current_app.config["LIST_PAGE_SIZE"],
+                type=int,
+            ),
         )
-        return render_template("order_confirmations/list.html", items=items)
+        rows = [
+            {
+                "url": url_for(
+                    "order_confirmations.order_confirmation_detail",
+                    order_confirmation_id=item.order_confirmation_id,
+                ),
+                "values": [
+                    getattr(item.customer, "customer_name", "") or "",
+                    item.order_number or "",
+                    item.notes or "",
+                ],
+            }
+            for item in items
+        ]
+        return render_template(
+            "crud/list.html",
+            title="Order Confirmations",
+            heading="Order Confirmations",
+            headers=("Customer", "Order Number", "Notes"),
+            rows=rows,
+            pagination=pagination,
+            empty_message="No order confirmations found.",
+        )
     finally:
         session.close()
 

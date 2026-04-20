@@ -18,7 +18,11 @@
         <tr>
             {% for value in row["values"] %}
             {% if loop.first %}
+            {% if row.get("url") %}
             <td><a href="{{ row['url'] }}">{{ value }}</a></td>
+            {% else %}
+            <td>{{ value }}</td>
+            {% endif %}
             {% else %}
             <td>{{ value }}</td>
             {% endif %}
@@ -28,6 +32,32 @@
     </tbody>
 </table>
 {% else %}
-<p>No records found.</p>
+<p>{{ empty_message or "No records found." }}</p>
+{% endif %}
+{% if pagination %}
+<section class="pagination">
+    <p>Showing {{ pagination.start_item }}-{{ pagination.end_item }} of {{ pagination.total_items }}</p>
+    <nav>
+        {% if pagination.previous_url %}
+        <a href="{{ pagination.previous_url }}">Previous</a>
+        {% else %}
+        <span>Previous</span>
+        {% endif %}
+        <span>Page {{ pagination.page }} of {{ pagination.total_pages }}</span>
+        {% if pagination.next_url %}
+        <a href="{{ pagination.next_url }}">Next</a>
+        {% else %}
+        <span>Next</span>
+        {% endif %}
+    </nav>
+    <form method="get">
+        {% for key, value in request.args.items() if key not in ["page", "page_size"] %}
+        <input type="hidden" name="{{ key }}" value="{{ value }}">
+        {% endfor %}
+        <label for="page_size">Page size</label>
+        <input id="page_size" name="page_size" type="number" min="1" value="{{ pagination.page_size }}">
+        <button type="submit">Update</button>
+    </form>
+</section>
 {% endif %}
 {% endblock %}

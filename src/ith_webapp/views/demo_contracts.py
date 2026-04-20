@@ -1,6 +1,7 @@
-from flask import Blueprint, current_app, redirect, render_template_string, request, url_for
+from flask import Blueprint, current_app, redirect, render_template, render_template_string, request, url_for
 
 from ith_webapp.models.rental import Rental
+from ith_webapp.services.pagination import paginate_query
 
 bp = Blueprint("demo_contracts", __name__, url_prefix="/demo-contracts")
 
@@ -82,8 +83,38 @@ _FORM_TEMPLATE = """
 def demo_contract_list():
     session = _get_session()
     try:
-        items = session.query(Rental).order_by(Rental.rental_id).all()
-        return render_template_string(_LIST_TEMPLATE, items=items)
+        items, pagination = paginate_query(
+            session.query(Rental).order_by(Rental.rental_id),
+            "demo_contracts.demo_contract_list",
+            request.args,
+            request.args.get("page", 1, type=int),
+            request.args.get(
+                "page_size",
+                current_app.config["LIST_PAGE_SIZE"],
+                type=int,
+            ),
+        )
+        rows = [
+            {
+                "url": url_for("demo_contracts.demo_contract_detail", rental_id=item.rental_id),
+                "values": [
+                    getattr(item.customer, "customer_name", "") or "",
+                    getattr(item.customer_tools, "serial_number", "") or "",
+                    getattr(item.rental_status, "name", "") or "",
+                    item.rental_date.isoformat() if item.rental_date else "",
+                ],
+            }
+            for item in items
+        ]
+        return render_template(
+            "crud/list.html",
+            title="Demo Contracts",
+            heading="Demo Contracts",
+            headers=("Customer", "Tool", "Status", "Contract Date"),
+            rows=rows,
+            pagination=pagination,
+            empty_message="(none)",
+        )
     finally:
         session.close()
 

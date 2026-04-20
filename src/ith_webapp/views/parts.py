@@ -4,6 +4,7 @@ from sqlalchemy import or_
 from ith_webapp.models.part import Part
 from ith_webapp.models.parts_sold import PartsSold
 from ith_webapp.services.barcode_generation import generate_code128_svg
+from ith_webapp.services.pagination import paginate_query
 
 bp = Blueprint("parts", __name__, url_prefix="/parts")
 
@@ -41,35 +42,36 @@ def part_list():
                     Part.description.ilike(like),
                 )
             )
-        items = items_query.order_by(Part.part_id).all()
-        return render_template_string(
-            """
-            {% extends "base.html" %}
-            {% block title %}Parts - ITH{% endblock %}
-            {% block content %}
-            <h1>Parts</h1>
-            <table>
-              <thead>
-                <tr><th>Item Code</th><th>Description</th><th>Active</th></tr>
-              </thead>
-              <tbody>
-                {% if items %}
-                {% for item in items %}
-                <tr>
-                  <td><a href="{{ url_for('parts.part_detail', part_id=item.part_id) }}">{{ item.part_number }}</a></td>
-                  <td>{{ item.description or "" }}</td>
-                  <td>{{ "Yes" if item.active else "No" }}</td>
-                </tr>
-                {% endfor %}
-                {% else %}
-                <tr><td colspan="3">No parts found.</td></tr>
-                {% endif %}
-              </tbody>
-            </table>
-            {% endblock %}
-            """,
-            items=items,
-            url_for=url_for,
+        items, pagination = paginate_query(
+            items_query.order_by(Part.part_id),
+            "parts.part_list",
+            request.args,
+            request.args.get("page", 1, type=int),
+            request.args.get(
+                "page_size",
+                current_app.config["LIST_PAGE_SIZE"],
+                type=int,
+            ),
+        )
+        rows = [
+            {
+                "url": url_for("parts.part_detail", part_id=item.part_id),
+                "values": [
+                    item.part_number,
+                    item.description or "",
+                    "Yes" if item.active else "No",
+                ],
+            }
+            for item in items
+        ]
+        return render_template(
+            "crud/list.html",
+            title="Parts",
+            heading="Parts",
+            headers=("Item Code", "Description", "Active"),
+            rows=rows,
+            pagination=pagination,
+            empty_message="No parts found.",
         )
     finally:
         session.close()

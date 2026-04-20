@@ -12,6 +12,7 @@ from flask import (
 
 from ith_webapp.models.ith_test_gauge import ITHTestGauge
 from ith_webapp.services.barcode_generation import generate_code128_svg
+from ith_webapp.services.pagination import paginate_query
 
 bp = Blueprint("ith_test_gauges", __name__, url_prefix="/ith-test-gauges")
 
@@ -61,12 +62,44 @@ def _render_label(item: ITHTestGauge, label_title: str, due_date_label: str, due
 def ith_test_gauge_list():
     session = _get_session()
     try:
-        items = (
+        items, pagination = paginate_query(
             session.query(ITHTestGauge)
             .order_by(ITHTestGauge.ith_test_gauge_id)
-            .all()
+            ,
+            "ith_test_gauges.ith_test_gauge_list",
+            request.args,
+            request.args.get("page", 1, type=int),
+            request.args.get(
+                "page_size",
+                current_app.config["LIST_PAGE_SIZE"],
+                type=int,
+            ),
         )
-        return render_template("ith_test_gauges/list.html", items=items)
+        rows = [
+            {
+                "url": url_for(
+                    "ith_test_gauges.ith_test_gauge_detail",
+                    ith_test_gauge_id=item.ith_test_gauge_id,
+                ),
+                "values": [
+                    getattr(item.ith_test_gauge_type, "name", "") or "",
+                    item.name,
+                    item.serial_number,
+                    item.calibration_due_date or "",
+                    item.certification_due_date or "",
+                ],
+            }
+            for item in items
+        ]
+        return render_template(
+            "crud/list.html",
+            title="ITH Test Gauges",
+            heading="ITH Test Gauges",
+            headers=("Type", "Name", "Serial Number", "Calibration Due", "Certification Due"),
+            rows=rows,
+            pagination=pagination,
+            empty_message="No ITH test gauges found.",
+        )
     finally:
         session.close()
 

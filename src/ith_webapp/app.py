@@ -136,6 +136,7 @@ def create_app(testing: bool = False) -> Flask:
     app = Flask(__name__)
     app.secret_key = app.config.get("SECRET_KEY") or "dev-only-secret-key"
     app.config["AUTH_REQUIRED"] = not testing
+    app.config.setdefault("LIST_PAGE_SIZE", 20)
 
     if testing:
         app.config["TESTING"] = True

@@ -7,6 +7,7 @@ from ith_webapp.models.site_wind_gas import SiteWindGas
 from ith_webapp.models.site_wind_turbine import SiteWindTurbine
 from ith_webapp.models.wind_turbine_lead import WindTurbineLead
 from ith_webapp.models.wind_turbine_lead_detail import WindTurbineLeadDetail
+from ith_webapp.services.pagination import paginate_query
 
 
 @dataclass(frozen=True)
@@ -31,8 +32,18 @@ def _register_crud_routes(bp: Blueprint, config: CrudConfig) -> None:
     def list_view():
         session = _get_session()
         try:
-            items = session.query(config.model).order_by(
-                getattr(config.model, config.id_attr)
+            items, pagination = paginate_query(
+                session.query(config.model).order_by(
+                    getattr(config.model, config.id_attr)
+                ),
+                config.list_endpoint,
+                request.args,
+                request.args.get("page", 1, type=int),
+                request.args.get(
+                    "page_size",
+                    current_app.config["LIST_PAGE_SIZE"],
+                    type=int,
+                ),
             )
             rows = [
                 {
@@ -49,6 +60,7 @@ def _register_crud_routes(bp: Blueprint, config: CrudConfig) -> None:
                 new_url=url_for(f"{config.endpoint_prefix}.create"),
                 headers=[label for label, _ in config.list_columns],
                 rows=rows,
+                pagination=pagination,
             )
         finally:
             session.close()

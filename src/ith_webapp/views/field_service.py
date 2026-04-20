@@ -5,6 +5,7 @@ from flask import Blueprint, current_app, redirect, render_template, request, ur
 from ith_webapp.models.customer import Customer
 from ith_webapp.models.field_service import FieldService
 from ith_webapp.models.field_service_status import FieldServiceStatus
+from ith_webapp.services.pagination import paginate_query
 
 bp = Blueprint("field_services", __name__, url_prefix="/field-services")
 
@@ -33,8 +34,37 @@ def field_service_list():
             if query.isdigit():
                 conditions.append(FieldService.field_service_id == int(query))
             items_query = items_query.filter(or_(*conditions))
-        items = items_query.order_by(FieldService.field_service_id).all()
-        return render_template("field_services/list.html", items=items)
+        items, pagination = paginate_query(
+            items_query.order_by(FieldService.field_service_id),
+            "field_services.field_service_list",
+            request.args,
+            request.args.get("page", 1, type=int),
+            request.args.get(
+                "page_size",
+                current_app.config["LIST_PAGE_SIZE"],
+                type=int,
+            ),
+        )
+        rows = [
+            {
+                "url": url_for("field_services.field_service_detail", field_service_id=item.field_service_id),
+                "values": [
+                    getattr(item.customer, "customer_name", "") or "",
+                    getattr(item.field_service_status, "name", "") or "",
+                    item.visit_notes or "",
+                ],
+            }
+            for item in items
+        ]
+        return render_template(
+            "crud/list.html",
+            title="Field Services",
+            heading="Field Services",
+            headers=("Customer", "Status", "Notes"),
+            rows=rows,
+            pagination=pagination,
+            empty_message="No field services found.",
+        )
     finally:
         session.close()
 

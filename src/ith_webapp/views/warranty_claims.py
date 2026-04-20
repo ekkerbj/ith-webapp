@@ -1,6 +1,7 @@
 from flask import Blueprint, current_app, redirect, render_template, request, url_for
 
 from ith_webapp.models.warranty_claim import WarrantyClaim, WarrantyClaimQuote
+from ith_webapp.services.pagination import paginate_query
 
 bp = Blueprint("warranty_claims", __name__, url_prefix="/warranty-claims")
 
@@ -26,10 +27,18 @@ def _sync_quotes(claim: WarrantyClaim, raw_value: str | None) -> None:
 def warranty_claim_list():
     session = _get_session()
     try:
-        items = (
+        items, pagination = paginate_query(
             session.query(WarrantyClaim)
             .order_by(WarrantyClaim.warranty_claim_id)
-            .all()
+            ,
+            "warranty_claims.warranty_claim_list",
+            request.args,
+            request.args.get("page", 1, type=int),
+            request.args.get(
+                "page_size",
+                current_app.config["LIST_PAGE_SIZE"],
+                type=int,
+            ),
         )
         rows = [
             {
@@ -51,6 +60,8 @@ def warranty_claim_list():
             heading="Warranty Claims",
             headers=("Claim Number", "Customer", "Status"),
             rows=rows,
+            pagination=pagination,
+            empty_message="No warranty claims found.",
         )
     finally:
         session.close()

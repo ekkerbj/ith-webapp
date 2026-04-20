@@ -1,7 +1,9 @@
-from flask import Blueprint, Response, current_app, render_template_string, request
+from flask import Blueprint, Response, current_app, render_template, render_template_string, request
+from sqlalchemy import or_
 
 from ith_webapp.models.packing_list import PackingList
 from ith_webapp.services.barcode_generation import generate_code128_svg
+from ith_webapp.services.pagination import paginate_query
 
 bp = Blueprint('packing_list_workflow', __name__)
 
@@ -37,42 +39,45 @@ def _render_customer_specific_label(packing_list: PackingList, label_title: str)
 def packing_list_index():
     session = _get_session()
     try:
-        packing_lists = session.query(PackingList).order_by(PackingList.id).all()
-        query = (request.args.get("q") or "").strip().lower()
-        if query:
-            packing_lists = [
-                packing_list
-                for packing_list in packing_lists
-                if query in (packing_list.customer_name or "").lower()
-                or query in (packing_list.packing_date or "").lower()
-            ]
-        return render_template_string(
-            """
-            {% extends "base.html" %}
-            {% block title %}Packing Lists - ITH{% endblock %}
-            {% block content %}
-            <h1>Packing Lists</h1>
-            <table>
-              <thead>
-                <tr><th>Customer</th><th>Packing Date</th><th>ID</th></tr>
-              </thead>
-              <tbody>
-                {% if packing_lists %}
-                {% for packing_list in packing_lists %}
-                <tr>
-                  <td>{{ packing_list.customer_name or "" }}</td>
-                  <td>{{ packing_list.packing_date or "" }}</td>
-                  <td>{{ packing_list.id }}</td>
-                </tr>
-                {% endfor %}
-                {% else %}
-                <tr><td colspan="3">No packing lists found.</td></tr>
-                {% endif %}
-              </tbody>
-            </table>
-            {% endblock %}
-            """,
-            packing_lists=packing_lists,
+        query_text = (request.args.get("q") or "").strip()
+        items_query = session.query(PackingList)
+        if query_text:
+            like = f"%{query_text}%"
+            items_query = items_query.filter(
+                or_(
+                    PackingList.customer_name.ilike(like),
+                    PackingList.packing_date.ilike(like),
+                )
+            )
+        packing_lists, pagination = paginate_query(
+            items_query.order_by(PackingList.id),
+            "packing_list_workflow.packing_list_index",
+            request.args,
+            request.args.get("page", 1, type=int),
+            request.args.get(
+                "page_size",
+                current_app.config["LIST_PAGE_SIZE"],
+                type=int,
+            ),
+        )
+        rows = [
+            {
+                "values": [
+                    packing_list.customer_name or "",
+                    packing_list.packing_date or "",
+                    packing_list.id,
+                ],
+            }
+            for packing_list in packing_lists
+        ]
+        return render_template(
+            "crud/list.html",
+            title="Packing Lists",
+            heading="Packing Lists",
+            headers=("Customer", "Packing Date", "ID"),
+            rows=rows,
+            pagination=pagination,
+            empty_message="No packing lists found.",
         )
     finally:
         session.close()

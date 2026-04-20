@@ -1,6 +1,7 @@
 from flask import Blueprint, current_app, redirect, render_template, request, url_for
 
 from ith_webapp.models.project import Project
+from ith_webapp.services.pagination import paginate_query
 
 bp = Blueprint("projects", __name__, url_prefix="/projects")
 
@@ -14,8 +15,37 @@ def _get_session():
 def project_list():
     session = _get_session()
     try:
-        items = session.query(Project).order_by(Project.project_id).all()
-        return render_template("projects/list.html", items=items)
+        items, pagination = paginate_query(
+            session.query(Project).order_by(Project.project_id),
+            "projects.project_list",
+            request.args,
+            request.args.get("page", 1, type=int),
+            request.args.get(
+                "page_size",
+                current_app.config["LIST_PAGE_SIZE"],
+                type=int,
+            ),
+        )
+        rows = [
+            {
+                "url": url_for("projects.project_detail", project_id=item.project_id),
+                "values": [
+                    item.project_name or "",
+                    item.cardcode or "",
+                    "Yes" if item.active else "No",
+                ],
+            }
+            for item in items
+        ]
+        return render_template(
+            "crud/list.html",
+            title="Projects",
+            heading="Projects",
+            headers=("Name", "Card Code", "Active"),
+            rows=rows,
+            pagination=pagination,
+            empty_message="No projects found.",
+        )
     finally:
         session.close()
 
