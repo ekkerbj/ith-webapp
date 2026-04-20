@@ -1,8 +1,10 @@
 from flask import Blueprint, current_app, redirect, render_template, request, url_for
 
+from ith_webapp.models.customer import Customer
 from ith_webapp.models.order_confirmation import OrderConfirmation
 from ith_webapp.services.date_filtering import current_month_filter
 from ith_webapp.services.pagination import paginate_query
+from ith_webapp.services.table_sorting import apply_sorting, build_sortable_columns
 from ith_webapp.views.session import get_session
 
 bp = Blueprint("order_confirmations", __name__, url_prefix="/order-confirmations")
@@ -16,11 +18,25 @@ def _get_session():
 def order_confirmation_list():
     session = _get_session()
     try:
-        items, pagination = paginate_query(
+        items_query = (
             session.query(OrderConfirmation)
+            .join(OrderConfirmation.customer)
             .filter(current_month_filter(OrderConfirmation.created_at))
-            .order_by(OrderConfirmation.order_confirmation_id)
-            ,
+        )
+        items_query, current_sort, current_direction = apply_sorting(
+            items_query,
+            request.args,
+            {
+                "customer_name": Customer.customer_name,
+                "order_number": OrderConfirmation.order_number,
+                "notes": OrderConfirmation.notes,
+                "created_at": OrderConfirmation.created_at,
+                "order_confirmation_id": OrderConfirmation.order_confirmation_id,
+            },
+            "order_confirmation_id",
+        )
+        items, pagination = paginate_query(
+            items_query,
             "order_confirmations.order_confirmation_list",
             request.args,
             request.args.get("page", 1, type=int),
@@ -29,6 +45,17 @@ def order_confirmation_list():
                 current_app.config["LIST_PAGE_SIZE"],
                 type=int,
             ),
+        )
+        columns = build_sortable_columns(
+            "order_confirmations.order_confirmation_list",
+            request.args,
+            (
+                ("Customer", "customer_name"),
+                ("Order Number", "order_number"),
+                ("Notes", "notes"),
+            ),
+            current_sort,
+            current_direction,
         )
         rows = [
             {
@@ -48,7 +75,7 @@ def order_confirmation_list():
             "crud/list.html",
             title="Order Confirmations",
             heading="Order Confirmations",
-            headers=("Customer", "Order Number", "Notes"),
+            columns=columns,
             rows=rows,
             pagination=pagination,
             empty_message="No order confirmations found.",

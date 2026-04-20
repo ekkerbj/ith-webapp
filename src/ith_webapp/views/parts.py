@@ -19,6 +19,7 @@ from ith_webapp.models.part import Part
 from ith_webapp.models.parts_sold import PartsSold
 from ith_webapp.services.barcode_generation import generate_code128_svg
 from ith_webapp.services.pagination import paginate_query
+from ith_webapp.services.table_sorting import apply_sorting, build_sortable_columns
 from ith_webapp.views.session import get_session
 
 bp = Blueprint("parts", __name__, url_prefix="/parts")
@@ -128,8 +129,19 @@ def part_list():
                     Part.description.ilike(like),
                 )
             )
+        items_query, current_sort, current_direction = apply_sorting(
+            items_query,
+            request.args,
+            {
+                "part_number": Part.part_number,
+                "description": Part.description,
+                "active": Part.active,
+                "part_id": Part.part_id,
+            },
+            "part_id",
+        )
         items, pagination = paginate_query(
-            items_query.order_by(Part.part_id),
+            items_query,
             "parts.part_list",
             request.args,
             request.args.get("page", 1, type=int),
@@ -138,6 +150,17 @@ def part_list():
                 current_app.config["LIST_PAGE_SIZE"],
                 type=int,
             ),
+        )
+        columns = build_sortable_columns(
+            "parts.part_list",
+            request.args,
+            (
+                ("Item Code", "part_number"),
+                ("Description", "description"),
+                ("Active", "active"),
+            ),
+            current_sort,
+            current_direction,
         )
         rows = [
             {
@@ -154,7 +177,7 @@ def part_list():
             "crud/list.html",
             title="Parts",
             heading="Parts",
-            headers=("Item Code", "Description", "Active"),
+            columns=columns,
             rows=rows,
             pagination=pagination,
             empty_message="No parts found.",

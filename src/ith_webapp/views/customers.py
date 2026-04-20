@@ -17,6 +17,7 @@ from ith_webapp.models.customer import Customer
 from ith_webapp.models.customer_address import CustomerAddress
 from ith_webapp.repositories.customer_repository import CustomerRepository
 from ith_webapp.services.pagination import paginate_query
+from ith_webapp.services.table_sorting import apply_sorting, build_sortable_columns
 from ith_webapp.services.audit_trail import record_audit_change
 from ith_webapp.views.session import get_session
 
@@ -442,8 +443,19 @@ def customer_list():
                     Customer.card_code.ilike(like),
                 )
             )
+        items_query, current_sort, current_direction = apply_sorting(
+            items_query,
+            request.args,
+            {
+                "customer_name": Customer.customer_name,
+                "card_code": Customer.card_code,
+                "active": Customer.active,
+                "customer_id": Customer.customer_id,
+            },
+            "customer_id",
+        )
         items, pagination = paginate_query(
-            items_query.order_by(Customer.customer_id),
+            items_query,
             "customers.customer_list",
             request.args,
             request.args.get("page", 1, type=int),
@@ -452,6 +464,17 @@ def customer_list():
                 current_app.config["LIST_PAGE_SIZE"],
                 type=int,
             ),
+        )
+        columns = build_sortable_columns(
+            "customers.customer_list",
+            request.args,
+            (
+                ("Name", "customer_name"),
+                ("Card Code", "card_code"),
+                ("Active", "active"),
+            ),
+            current_sort,
+            current_direction,
         )
         rows = [
             {
@@ -468,7 +491,7 @@ def customer_list():
             "crud/list.html",
             title="Customers",
             heading="Customers",
-            headers=("Name", "Card Code", "Active"),
+            columns=columns,
             rows=rows,
             pagination=pagination,
             empty_message="No customers found.",

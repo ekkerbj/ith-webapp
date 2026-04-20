@@ -4,6 +4,7 @@ from sqlalchemy import or_
 from ith_webapp.models.packing_list import PackingList
 from ith_webapp.services.barcode_generation import generate_code128_svg
 from ith_webapp.services.pagination import paginate_query
+from ith_webapp.services.table_sorting import apply_sorting, build_sortable_columns
 from ith_webapp.views.session import get_session
 
 bp = Blueprint('packing_list_workflow', __name__)
@@ -49,8 +50,18 @@ def packing_list_index():
                     PackingList.packing_date.ilike(like),
                 )
             )
+        items_query, current_sort, current_direction = apply_sorting(
+            items_query,
+            request.args,
+            {
+                "customer_name": PackingList.customer_name,
+                "packing_date": PackingList.packing_date,
+                "id": PackingList.id,
+            },
+            "id",
+        )
         packing_lists, pagination = paginate_query(
-            items_query.order_by(PackingList.id),
+            items_query,
             "packing_list_workflow.packing_list_index",
             request.args,
             request.args.get("page", 1, type=int),
@@ -59,6 +70,17 @@ def packing_list_index():
                 current_app.config["LIST_PAGE_SIZE"],
                 type=int,
             ),
+        )
+        columns = build_sortable_columns(
+            "packing_list_workflow.packing_list_index",
+            request.args,
+            (
+                ("Customer", "customer_name"),
+                ("Packing Date", "packing_date"),
+                ("ID", "id"),
+            ),
+            current_sort,
+            current_direction,
         )
         rows = [
             {
@@ -74,7 +96,7 @@ def packing_list_index():
             "crud/list.html",
             title="Packing Lists",
             heading="Packing Lists",
-            headers=("Customer", "Packing Date", "ID"),
+            columns=columns,
             rows=rows,
             pagination=pagination,
             empty_message="No packing lists found.",

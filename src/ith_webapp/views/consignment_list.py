@@ -1,7 +1,10 @@
 from flask import Blueprint, current_app, redirect, render_template, request, url_for
 
+from ith_webapp.models.customer import Customer
 from ith_webapp.models.consignment_list import ConsignmentList
+from ith_webapp.models.part import Part
 from ith_webapp.services.pagination import paginate_query
+from ith_webapp.services.table_sorting import apply_sorting, build_sortable_columns
 from ith_webapp.views.session import get_session
 
 bp = Blueprint("consignment_list", __name__, url_prefix="/consignment-lists")
@@ -17,7 +20,19 @@ def consignment_list():
     try:
         items_query = (
             session.query(ConsignmentList)
-            .order_by(ConsignmentList.consignment_list_id)
+            .join(ConsignmentList.customer)
+            .join(ConsignmentList.part)
+        )
+        items_query, current_sort, current_direction = apply_sorting(
+            items_query,
+            request.args,
+            {
+                "customer_name": Customer.customer_name,
+                "part_number": Part.part_number,
+                "quantity": ConsignmentList.quantity,
+                "consignment_list_id": ConsignmentList.consignment_list_id,
+            },
+            "consignment_list_id",
         )
         items, pagination = paginate_query(
             items_query,
@@ -29,6 +44,17 @@ def consignment_list():
                 current_app.config["LIST_PAGE_SIZE"],
                 type=int,
             ),
+        )
+        columns = build_sortable_columns(
+            "consignment_list.consignment_list",
+            request.args,
+            (
+                ("Customer", "customer_name"),
+                ("Part", "part_number"),
+                ("Quantity", "quantity"),
+            ),
+            current_sort,
+            current_direction,
         )
         rows = [
             {
@@ -48,7 +74,7 @@ def consignment_list():
             "crud/list.html",
             title="Consignment Lists",
             heading="Consignment Lists",
-            headers=("Customer", "Part", "Quantity"),
+            columns=columns,
             rows=rows,
             pagination=pagination,
             empty_message="No consignment items found.",

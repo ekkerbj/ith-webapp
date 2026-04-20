@@ -1,4 +1,3 @@
-31. 2026-04-20: F-079 Error Handling and 404/500 Pages implemented with custom error pages, global exception logging, tests, and ADR.
 32. 2026-04-20: F-080 Session Management Middleware implemented with shared request-session helper, teardown cleanup, regression test, and ADR.
 33. 2026-04-20: F-081 Report - Toolset (PDF) implemented with customer tool detail PDF output, route, tests, and ADR.
 34. 2026-04-20: F-082 Report - Communication and Lead Letters (PDF) implemented with customer communication, wind turbine lead letter, and follow-up letter PDF routes, tests, and ADR.
@@ -14,3 +13,4 @@
 44. 2026-04-20: F-092 Conditional Row Formatting implemented with CSS zebra striping and current-row highlighting, regression test, and ADR.
 45. 2026-04-20: F-093 Service Packet PDF implemented with bundled service quote, measurement, and optional gauge certificate pages, route, tests, and ADR.
 46. 2026-04-20: F-094 Field Service Hours Graph implemented with aggregated hours-by-date PDF output, route, tests, and ADR.
+47. 2026-04-20: F-095 Sorting on List Views implemented with shared sortable CRUD headers, preserved URL state, tests, and ADR.

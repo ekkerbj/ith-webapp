@@ -8,9 +8,24 @@
 <table>
     <thead>
         <tr>
+            {% if columns %}
+            {% for column in columns %}
+            <th>
+                {% if column.url %}
+                <a href="{{ column.url }}">{{ column.label }}</a>
+                {% else %}
+                {{ column.label }}
+                {% endif %}
+                {% if column.active %}
+                <span>({{ column.direction }})</span>
+                {% endif %}
+            </th>
+            {% endfor %}
+            {% else %}
             {% for header in headers %}
             <th>{{ header }}</th>
             {% endfor %}
+            {% endif %}
         </tr>
     </thead>
     <tbody>

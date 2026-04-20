@@ -64,6 +64,20 @@ def test_customer_list_filters_by_name_or_card_code():
     assert "Beta Inc" not in html
 
 
+def test_customer_list_sorts_by_name_when_requested():
+    app = _create_test_app_with_customers(
+        Customer(customer_name="Bravo Corp", card_code="C20001", active=True),
+        Customer(customer_name="Alpha Corp", card_code="C10001", active=True),
+    )
+    client = app.test_client()
+
+    response = client.get("/customers/?sort=customer_name&direction=asc")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert html.index("Alpha Corp") < html.index("Bravo Corp")
+
+
 def test_customer_detail_renders_customer_fields():
     app = _create_test_app_with_customers(
         Customer(
@@ -131,6 +145,45 @@ def test_customer_create_saves_and_redirects():
     assert "New Corp" in html
 
 
+def test_customer_create_flashes_success_message():
+    app = _create_test_app_with_customers()
+    client = app.test_client()
+
+    response = client.post(
+        "/customers/new",
+        data={
+            "customer_name": "New Corp",
+            "card_code": "C30001",
+            "active": "on",
+        },
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Customer created successfully." in html
+
+
+def test_customer_create_rejects_invalid_submission_with_flash_and_inline_errors():
+    app = _create_test_app_with_customers()
+    client = app.test_client()
+
+    response = client.post(
+        "/customers/new",
+        data={
+            "customer_name": "",
+            "card_code": "C30001",
+            "price_list_num": "abc",
+        },
+    )
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Please correct the highlighted errors and try again." in html
+    assert "Customer Name is required." in html
+    assert "Price List Num must be a whole number." in html
+
+
 def test_customer_edit_form_renders_with_existing_data():
     app = _create_test_app_with_customers(
         Customer(
@@ -194,6 +247,32 @@ def test_customer_edit_updates_and_redirects():
     assert "7" in html
     assert "Jordan" in html
 
+
+def test_customer_edit_flashes_success_message():
+    app = _create_test_app_with_customers(
+        Customer(
+            customer_name="Acme Corp",
+            card_code="C10001",
+            active=True,
+        ),
+    )
+    client = app.test_client()
+
+    response = client.post(
+        "/customers/1/edit",
+        data={
+            "customer_name": "Acme Updated",
+            "card_code": "C10001",
+            "active": "on",
+        },
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Customer updated successfully." in html
+
+
 def test_customer_delete_removes_customer():
     app = _create_test_app_with_customers(
         Customer(customer_name="Delete Me", card_code="C99999", active=True),
@@ -217,3 +296,16 @@ def test_customer_delete_removes_customer():
     html = response.get_data(as_text=True)
     assert "Delete Me" not in html
     assert "Keep Me" in html
+
+
+def test_customer_delete_flashes_success_message():
+    app = _create_test_app_with_customers(
+        Customer(customer_name="Delete Me", card_code="C99999", active=True),
+    )
+    client = app.test_client()
+
+    response = client.post("/customers/1/delete", follow_redirects=True)
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Customer deleted successfully." in html

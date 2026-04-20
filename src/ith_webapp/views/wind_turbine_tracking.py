@@ -8,6 +8,7 @@ from ith_webapp.models.site_wind_turbine import SiteWindTurbine
 from ith_webapp.models.wind_turbine_lead import WindTurbineLead
 from ith_webapp.models.wind_turbine_lead_detail import WindTurbineLeadDetail
 from ith_webapp.services.pagination import paginate_query
+from ith_webapp.services.table_sorting import apply_sorting, build_sortable_columns
 from ith_webapp.views.session import get_session
 
 
@@ -32,10 +33,20 @@ def _register_crud_routes(bp: Blueprint, config: CrudConfig) -> None:
     def list_view():
         session = _get_session()
         try:
+            sort_map = {
+                attr: getattr(config.model, attr)
+                for _, attr in config.list_columns
+                if hasattr(config.model, attr)
+            }
+            sort_map[config.id_attr] = getattr(config.model, config.id_attr)
+            items_query, current_sort, current_direction = apply_sorting(
+                session.query(config.model),
+                request.args,
+                sort_map,
+                config.id_attr,
+            )
             items, pagination = paginate_query(
-                session.query(config.model).order_by(
-                    getattr(config.model, config.id_attr)
-                ),
+                items_query,
                 config.list_endpoint,
                 request.args,
                 request.args.get("page", 1, type=int),
@@ -44,6 +55,13 @@ def _register_crud_routes(bp: Blueprint, config: CrudConfig) -> None:
                     current_app.config["LIST_PAGE_SIZE"],
                     type=int,
                 ),
+            )
+            columns = build_sortable_columns(
+                config.list_endpoint,
+                request.args,
+                list(config.list_columns),
+                current_sort,
+                current_direction,
             )
             rows = [
                 {
@@ -58,7 +76,7 @@ def _register_crud_routes(bp: Blueprint, config: CrudConfig) -> None:
                 heading=config.title,
                 list_url=url_for(config.list_endpoint),
                 new_url=url_for(f"{config.endpoint_prefix}.create"),
-                headers=[label for label, _ in config.list_columns],
+                columns=columns,
                 rows=rows,
                 pagination=pagination,
             )

@@ -1,7 +1,9 @@
 from flask import Blueprint, current_app, redirect, render_template, request, url_for
 
+from ith_webapp.models.customer import Customer
 from ith_webapp.models.warranty_claim import WarrantyClaim, WarrantyClaimQuote
 from ith_webapp.services.pagination import paginate_query
+from ith_webapp.services.table_sorting import apply_sorting, build_sortable_columns
 from ith_webapp.views.session import get_session
 
 bp = Blueprint("warranty_claims", __name__, url_prefix="/warranty-claims")
@@ -27,10 +29,20 @@ def _sync_quotes(claim: WarrantyClaim, raw_value: str | None) -> None:
 def warranty_claim_list():
     session = _get_session()
     try:
+        items_query = session.query(WarrantyClaim).join(WarrantyClaim.customer)
+        items_query, current_sort, current_direction = apply_sorting(
+            items_query,
+            request.args,
+            {
+                "claim_number": WarrantyClaim.claim_number,
+                "customer_name": Customer.customer_name,
+                "status": WarrantyClaim.status,
+                "warranty_claim_id": WarrantyClaim.warranty_claim_id,
+            },
+            "warranty_claim_id",
+        )
         items, pagination = paginate_query(
-            session.query(WarrantyClaim)
-            .order_by(WarrantyClaim.warranty_claim_id)
-            ,
+            items_query,
             "warranty_claims.warranty_claim_list",
             request.args,
             request.args.get("page", 1, type=int),
@@ -39,6 +51,17 @@ def warranty_claim_list():
                 current_app.config["LIST_PAGE_SIZE"],
                 type=int,
             ),
+        )
+        columns = build_sortable_columns(
+            "warranty_claims.warranty_claim_list",
+            request.args,
+            (
+                ("Claim Number", "claim_number"),
+                ("Customer", "customer_name"),
+                ("Status", "status"),
+            ),
+            current_sort,
+            current_direction,
         )
         rows = [
             {
@@ -58,7 +81,7 @@ def warranty_claim_list():
             "crud/list.html",
             title="Warranty Claims",
             heading="Warranty Claims",
-            headers=("Claim Number", "Customer", "Status"),
+            columns=columns,
             rows=rows,
             pagination=pagination,
             empty_message="No warranty claims found.",

@@ -2,6 +2,7 @@ from flask import Blueprint, current_app, redirect, render_template, request, ur
 
 from ith_webapp.models.project import Project
 from ith_webapp.services.pagination import paginate_query
+from ith_webapp.services.table_sorting import apply_sorting, build_sortable_columns
 from ith_webapp.views.session import get_session
 
 bp = Blueprint("projects", __name__, url_prefix="/projects")
@@ -15,8 +16,19 @@ def _get_session():
 def project_list():
     session = _get_session()
     try:
+        items_query, current_sort, current_direction = apply_sorting(
+            session.query(Project),
+            request.args,
+            {
+                "project_name": Project.project_name,
+                "cardcode": Project.cardcode,
+                "active": Project.active,
+                "project_id": Project.project_id,
+            },
+            "project_id",
+        )
         items, pagination = paginate_query(
-            session.query(Project).order_by(Project.project_id),
+            items_query,
             "projects.project_list",
             request.args,
             request.args.get("page", 1, type=int),
@@ -25,6 +37,17 @@ def project_list():
                 current_app.config["LIST_PAGE_SIZE"],
                 type=int,
             ),
+        )
+        columns = build_sortable_columns(
+            "projects.project_list",
+            request.args,
+            (
+                ("Name", "project_name"),
+                ("Card Code", "cardcode"),
+                ("Active", "active"),
+            ),
+            current_sort,
+            current_direction,
         )
         rows = [
             {
@@ -41,7 +64,7 @@ def project_list():
             "crud/list.html",
             title="Projects",
             heading="Projects",
-            headers=("Name", "Card Code", "Active"),
+            columns=columns,
             rows=rows,
             pagination=pagination,
             empty_message="No projects found.",

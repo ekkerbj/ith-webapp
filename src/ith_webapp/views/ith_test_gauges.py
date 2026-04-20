@@ -11,8 +11,10 @@ from flask import (
 )
 
 from ith_webapp.models.ith_test_gauge import ITHTestGauge
+from ith_webapp.models.ith_test_gauge_type import ITHTestGaugeType
 from ith_webapp.services.barcode_generation import generate_code128_svg
 from ith_webapp.services.pagination import paginate_query
+from ith_webapp.services.table_sorting import apply_sorting, build_sortable_columns
 from ith_webapp.views.session import get_session
 
 bp = Blueprint("ith_test_gauges", __name__, url_prefix="/ith-test-gauges")
@@ -62,10 +64,22 @@ def _render_label(item: ITHTestGauge, label_title: str, due_date_label: str, due
 def ith_test_gauge_list():
     session = _get_session()
     try:
+        items_query = session.query(ITHTestGauge).join(ITHTestGauge.ith_test_gauge_type)
+        items_query, current_sort, current_direction = apply_sorting(
+            items_query,
+            request.args,
+            {
+                "type": ITHTestGaugeType.name,
+                "name": ITHTestGauge.name,
+                "serial_number": ITHTestGauge.serial_number,
+                "calibration_due_date": ITHTestGauge.calibration_due_date,
+                "certification_due_date": ITHTestGauge.certification_due_date,
+                "ith_test_gauge_id": ITHTestGauge.ith_test_gauge_id,
+            },
+            "ith_test_gauge_id",
+        )
         items, pagination = paginate_query(
-            session.query(ITHTestGauge)
-            .order_by(ITHTestGauge.ith_test_gauge_id)
-            ,
+            items_query,
             "ith_test_gauges.ith_test_gauge_list",
             request.args,
             request.args.get("page", 1, type=int),
@@ -74,6 +88,19 @@ def ith_test_gauge_list():
                 current_app.config["LIST_PAGE_SIZE"],
                 type=int,
             ),
+        )
+        columns = build_sortable_columns(
+            "ith_test_gauges.ith_test_gauge_list",
+            request.args,
+            (
+                ("Type", "type"),
+                ("Name", "name"),
+                ("Serial Number", "serial_number"),
+                ("Calibration Due", "calibration_due_date"),
+                ("Certification Due", "certification_due_date"),
+            ),
+            current_sort,
+            current_direction,
         )
         rows = [
             {
@@ -95,7 +122,7 @@ def ith_test_gauge_list():
             "crud/list.html",
             title="ITH Test Gauges",
             heading="ITH Test Gauges",
-            headers=("Type", "Name", "Serial Number", "Calibration Due", "Certification Due"),
+            columns=columns,
             rows=rows,
             pagination=pagination,
             empty_message="No ITH test gauges found.",

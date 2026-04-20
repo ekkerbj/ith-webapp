@@ -1,8 +1,12 @@
 from flask import Blueprint, current_app, redirect, render_template, request, url_for
 
+from ith_webapp.models.customer import Customer
+from ith_webapp.models.customer_tools import CustomerTools
 from ith_webapp.models.rental import Rental
+from ith_webapp.models.rental_status import RentalStatus
 from ith_webapp.services.date_filtering import current_month_filter
 from ith_webapp.services.pagination import paginate_query
+from ith_webapp.services.table_sorting import apply_sorting, build_sortable_columns
 from ith_webapp.views.session import get_session
 
 bp = Blueprint("rentals", __name__, url_prefix="/rentals")
@@ -16,10 +20,27 @@ def _get_session():
 def rental_list():
     session = _get_session()
     try:
-        items, pagination = paginate_query(
+        items_query = (
             session.query(Rental)
+            .join(Rental.customer)
+            .join(Rental.customer_tools)
+            .join(Rental.rental_status)
             .filter(current_month_filter(Rental.rental_date))
-            .order_by(Rental.rental_id),
+        )
+        items_query, current_sort, current_direction = apply_sorting(
+            items_query,
+            request.args,
+            {
+                "customer_name": Customer.customer_name,
+                "serial_number": CustomerTools.serial_number,
+                "status": RentalStatus.name,
+                "rental_date": Rental.rental_date,
+                "rental_id": Rental.rental_id,
+            },
+            "rental_id",
+        )
+        items, pagination = paginate_query(
+            items_query,
             "rentals.rental_list",
             request.args,
             request.args.get("page", 1, type=int),
@@ -28,6 +49,18 @@ def rental_list():
                 current_app.config["LIST_PAGE_SIZE"],
                 type=int,
             ),
+        )
+        columns = build_sortable_columns(
+            "rentals.rental_list",
+            request.args,
+            (
+                ("Customer", "customer_name"),
+                ("Tool", "serial_number"),
+                ("Status", "status"),
+                ("Rental Date", "rental_date"),
+            ),
+            current_sort,
+            current_direction,
         )
         rows = [
             {
@@ -45,7 +78,7 @@ def rental_list():
             "crud/list.html",
             title="Rentals",
             heading="Rentals",
-            headers=("Customer", "Tool", "Status", "Rental Date"),
+            columns=columns,
             rows=rows,
             pagination=pagination,
             empty_message="No rentals found.",

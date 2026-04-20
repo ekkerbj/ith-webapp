@@ -7,6 +7,7 @@ from ith_webapp.models.field_service import FieldService
 from ith_webapp.models.field_service_status import FieldServiceStatus
 from ith_webapp.services.date_filtering import current_month_filter
 from ith_webapp.services.pagination import paginate_query
+from ith_webapp.services.table_sorting import apply_sorting, build_sortable_columns
 from ith_webapp.views.session import get_session
 
 bp = Blueprint("field_services", __name__, url_prefix="/field-services")
@@ -36,8 +37,19 @@ def field_service_list():
             if query.isdigit():
                 conditions.append(FieldService.field_service_id == int(query))
             items_query = items_query.filter(or_(*conditions))
+        items_query, current_sort, current_direction = apply_sorting(
+            items_query,
+            request.args,
+            {
+                "customer_name": Customer.customer_name,
+                "status": FieldServiceStatus.name,
+                "notes": FieldService.visit_notes,
+                "field_service_id": FieldService.field_service_id,
+            },
+            "field_service_id",
+        )
         items, pagination = paginate_query(
-            items_query.order_by(FieldService.field_service_id),
+            items_query,
             "field_services.field_service_list",
             request.args,
             request.args.get("page", 1, type=int),
@@ -46,6 +58,17 @@ def field_service_list():
                 current_app.config["LIST_PAGE_SIZE"],
                 type=int,
             ),
+        )
+        columns = build_sortable_columns(
+            "field_services.field_service_list",
+            request.args,
+            (
+                ("Customer", "customer_name"),
+                ("Status", "status"),
+                ("Notes", "notes"),
+            ),
+            current_sort,
+            current_direction,
         )
         rows = [
             {
@@ -62,7 +85,7 @@ def field_service_list():
             "crud/list.html",
             title="Field Services",
             heading="Field Services",
-            headers=("Customer", "Status", "Notes"),
+            columns=columns,
             rows=rows,
             pagination=pagination,
             empty_message="No field services found.",
