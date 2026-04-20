@@ -1,0 +1,33 @@
+substitutions:
+  _REGION: us-central1
+  _SERVICE: ith-webapp
+  _IMAGE: gcr.io/$PROJECT_ID/ith-webapp:$SHORT_SHA
+
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ["build", "-t", "$_IMAGE", "."]
+  - name: gcr.io/cloud-builders/docker
+    args: ["push", "$_IMAGE"]
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      [
+        "run",
+        "deploy",
+        "$_SERVICE",
+        "--image",
+        "$_IMAGE",
+        "--region",
+        "$_REGION",
+        "--platform",
+        "managed",
+        "--allow-unauthenticated",
+        "--port",
+        "8080",
+      ]
+
+images:
+  - "$_IMAGE"
+
+options:
+  logging: CLOUD_LOGGING_ONLY

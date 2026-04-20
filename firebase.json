@@ -1,0 +1,15 @@
+{
+  "hosting": {
+    "public": "src/ith_webapp",
+    "ignore": ["**", "!static/**"],
+    "rewrites": [
+      {
+        "source": "**",
+        "run": {
+          "serviceId": "ith-webapp",
+          "region": "us-central1"
+        }
+      }
+    ]
+  }
+}
