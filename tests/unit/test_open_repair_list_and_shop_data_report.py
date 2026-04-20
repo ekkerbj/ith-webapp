@@ -73,3 +73,68 @@ def test_shop_data_report_summarizes_service_workload(app):
         assert "3.50" in body
     finally:
         session.close()
+
+
+def test_repair_time_analysis_report_groups_time_by_service_and_technician(app):
+    factory = app.config["SESSION_FACTORY"]
+    session = factory()
+    try:
+        customer = Customer(customer_name="Acme Repair")
+        session.add(customer)
+        session.flush()
+
+        service_one = Service(
+            customer_id=customer.customer_id,
+            technician="Tech One",
+            order_status="Open",
+            active=True,
+        )
+        service_two = Service(
+            customer_id=customer.customer_id,
+            technician="Tech Two",
+            order_status="Closed",
+            active=True,
+        )
+        session.add_all([service_one, service_two])
+        session.flush()
+
+        session.add_all(
+            [
+                ServiceTime(
+                    service_id=service_one.service_id,
+                    technician="Tech One",
+                    hours=1.5,
+                    date="2026-04-18",
+                    labor_rate=100.0,
+                ),
+                ServiceTime(
+                    service_id=service_one.service_id,
+                    technician="Tech One",
+                    hours=2.0,
+                    date="2026-04-19",
+                    labor_rate=100.0,
+                ),
+                ServiceTime(
+                    service_id=service_two.service_id,
+                    technician="Tech Two",
+                    hours=0.5,
+                    date="2026-04-19",
+                    labor_rate=150.0,
+                ),
+            ]
+        )
+        session.commit()
+
+        response = app.test_client().get("/reports/repair-time-analysis")
+
+        assert response.status_code == 200
+        assert response.mimetype == "text/html"
+        body = response.get_data(as_text=True)
+        assert "Repair Time Analysis" in body
+        assert "Acme Repair" in body
+        assert "Tech One" in body
+        assert "3.50" in body
+        assert "Tech Two" in body
+        assert "0.50" in body
+    finally:
+        session.close()

@@ -799,6 +799,45 @@ def _shop_data_rows(session) -> list[dict[str, object]]:
     ]
 
 
+def _repair_time_analysis_rows(session) -> list[dict[str, object]]:
+    rows = (
+        session.query(ServiceTime, Service, Customer)
+        .join(Service, Service.service_id == ServiceTime.service_id)
+        .join(Customer, Customer.customer_id == Service.customer_id)
+        .order_by(Customer.customer_name, Service.service_id, ServiceTime.technician, ServiceTime.id)
+        .all()
+    )
+    summary: dict[tuple[int, str], dict[str, object]] = {}
+    for time_entry, service, customer in rows:
+        technician = time_entry.technician or "Unassigned"
+        key = (service.service_id, technician)
+        row = summary.setdefault(
+            key,
+            {
+                "customer_name": customer.customer_name or "",
+                "service_id": service.service_id,
+                "technician": technician,
+                "entry_count": 0,
+                "total_hours": Decimal("0"),
+                "total_labor": Decimal("0"),
+            },
+        )
+        row["entry_count"] += 1
+        row["total_hours"] += Decimal(str(time_entry.hours))
+        row["total_labor"] += Decimal(str(time_entry.hours)) * Decimal(str(time_entry.labor_rate))
+    return [
+        {
+            "customer_name": row["customer_name"],
+            "service_id": row["service_id"],
+            "technician": row["technician"],
+            "entry_count": row["entry_count"],
+            "total_hours": f"{row['total_hours']:.2f}",
+            "total_labor": f"{row['total_labor']:.2f}",
+        }
+        for row in summary.values()
+    ]
+
+
 def _paginate(lines: list[str], lines_per_page: int = 24) -> list[list[str]]:
     pages: list[list[str]] = []
     current: list[str] = []
@@ -864,6 +903,35 @@ _SHOP_DATA_TEMPLATE = """
     {% endfor %}
     {% else %}
     <tr><td colspan="5">(none)</td></tr>
+    {% endif %}
+  </tbody>
+</table>
+{% endblock %}
+"""
+
+_REPAIR_TIME_ANALYSIS_TEMPLATE = """
+{% extends "base.html" %}
+{% block title %}Repair Time Analysis - ITH{% endblock %}
+{% block content %}
+<h1>Repair Time Analysis</h1>
+<table>
+  <thead>
+    <tr><th>Customer</th><th>Service</th><th>Technician</th><th>Entries</th><th>Total Hours</th><th>Total Labor</th></tr>
+  </thead>
+  <tbody>
+    {% if rows %}
+    {% for row in rows %}
+    <tr>
+      <td>{{ row.customer_name }}</td>
+      <td>{{ row.service_id }}</td>
+      <td>{{ row.technician }}</td>
+      <td>{{ row.entry_count }}</td>
+      <td>{{ row.total_hours }}</td>
+      <td>{{ row.total_labor }}</td>
+    </tr>
+    {% endfor %}
+    {% else %}
+    <tr><td colspan="6">(none)</td></tr>
     {% endif %}
   </tbody>
 </table>
@@ -1606,6 +1674,16 @@ def shop_data_report():
     try:
         rows = _shop_data_rows(session)
         return render_template_string(_SHOP_DATA_TEMPLATE, rows=rows)
+    finally:
+        session.close()
+
+
+@bp.route("/repair-time-analysis")
+def repair_time_analysis_report():
+    session = _get_session()
+    try:
+        rows = _repair_time_analysis_rows(session)
+        return render_template_string(_REPAIR_TIME_ANALYSIS_TEMPLATE, rows=rows)
     finally:
         session.close()
 
