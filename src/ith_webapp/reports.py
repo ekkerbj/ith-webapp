@@ -13,6 +13,7 @@ from ith_webapp.models import (
     Customer,
     CustomerApplication,
     CustomerApplicationSpecs,
+    CustomerCommunicationLog,
     ConsignmentList,
     CustomerTools,
     CustomerToolsSub,
@@ -29,6 +30,8 @@ from ith_webapp.models import (
     ServiceSub,
     ServiceTime,
     Unit,
+    WindTurbineLead,
+    WindTurbineLeadDetail,
 )
 
 bp = Blueprint("reports", __name__, url_prefix="/reports")
@@ -619,6 +622,131 @@ def _customer_detail_context(session, customer_id: int) -> dict[str, object]:
             for tool in tools
         ],
     }
+
+
+def _customer_communication_rows(session, customer_id: int) -> tuple[Customer, list[CustomerCommunicationLog]]:
+    customer = session.get(Customer, customer_id)
+    if customer is None:
+        raise ValueError(f"Customer {customer_id} not found")
+    logs = (
+        session.query(CustomerCommunicationLog)
+        .filter(CustomerCommunicationLog.customer_id == customer_id)
+        .order_by(CustomerCommunicationLog.created_at, CustomerCommunicationLog.log_id)
+        .all()
+    )
+    return customer, logs
+
+
+def _customer_communication_lines(
+    customer: Customer, logs: list[CustomerCommunicationLog]
+) -> list[str]:
+    lines = [
+        "Customer Communication Report",
+        f"Customer: {customer.customer_name or ''}",
+        f"Card Code: {customer.card_code or ''}",
+        "",
+        "Communication Log",
+    ]
+    if not logs:
+        lines.append("(none)")
+    else:
+        for log in logs:
+            lines.append(
+                f" - {log.created_at.isoformat()} | {log.note or ''}"
+            )
+    return lines
+
+
+def build_customer_communication_report_pdf(session, customer_id: int) -> bytes:
+    customer, logs = _customer_communication_rows(session, customer_id)
+    pages = _paginate(_customer_communication_lines(customer, logs))
+    return _build_pdf(pages)
+
+
+def _wind_turbine_lead_rows(
+    session, lead_id: int
+) -> tuple[WindTurbineLead, list[WindTurbineLeadDetail]]:
+    lead = session.get(WindTurbineLead, lead_id)
+    if lead is None:
+        raise ValueError(f"WindTurbineLead {lead_id} not found")
+    details = (
+        session.query(WindTurbineLeadDetail)
+        .filter(WindTurbineLeadDetail.wind_turbine_lead_id == lead_id)
+        .order_by(WindTurbineLeadDetail.wind_turbine_lead_detail_id)
+        .all()
+    )
+    return lead, details
+
+
+def _wind_turbine_lead_lines(
+    lead: WindTurbineLead, details: list[WindTurbineLeadDetail]
+) -> list[str]:
+    lines = [
+        "Wind Turbine Lead Letter",
+        f"Customer: {lead.customer_name or ''}",
+        f"Contact: {lead.contact_name or ''}",
+        f"Phone: {lead.phone or ''}",
+        f"Email: {lead.email or ''}",
+        f"Status: {lead.status or ''}",
+        "",
+        "Lead Notes",
+        lead.notes or "(none)",
+        "",
+        "Follow-up Notes",
+    ]
+    if not details:
+        lines.append("(none)")
+    else:
+        for detail in details:
+            lines.append(f" - {detail.notes or ''}")
+    return lines
+
+
+def build_wind_turbine_lead_letter_pdf(session, lead_id: int) -> bytes:
+    lead, details = _wind_turbine_lead_rows(session, lead_id)
+    pages = _paginate(_wind_turbine_lead_lines(lead, details))
+    return _build_pdf(pages)
+
+
+def _wind_turbine_lead_follow_up_rows(
+    session, lead_id: int, detail_id: int
+) -> tuple[WindTurbineLead, WindTurbineLeadDetail]:
+    lead = session.get(WindTurbineLead, lead_id)
+    if lead is None:
+        raise ValueError(f"WindTurbineLead {lead_id} not found")
+    detail = session.get(WindTurbineLeadDetail, detail_id)
+    if detail is None or detail.wind_turbine_lead_id != lead_id:
+        raise ValueError(
+            f"WindTurbineLeadDetail {detail_id} not found for lead {lead_id}"
+        )
+    return lead, detail
+
+
+def _wind_turbine_lead_follow_up_lines(
+    lead: WindTurbineLead, detail: WindTurbineLeadDetail
+) -> list[str]:
+    return [
+        "Wind Turbine Lead Follow-Up Letter",
+        f"Customer: {lead.customer_name or ''}",
+        f"Contact: {lead.contact_name or ''}",
+        f"Phone: {lead.phone or ''}",
+        f"Email: {lead.email or ''}",
+        f"Status: {lead.status or ''}",
+        "",
+        "Lead Notes",
+        lead.notes or "(none)",
+        "",
+        "Follow-up Note",
+        detail.notes or "(none)",
+    ]
+
+
+def build_wind_turbine_lead_follow_up_letter_pdf(
+    session, lead_id: int, detail_id: int
+) -> bytes:
+    lead, detail = _wind_turbine_lead_follow_up_rows(session, lead_id, detail_id)
+    pages = _paginate(_wind_turbine_lead_follow_up_lines(lead, detail))
+    return _build_pdf(pages)
 
 
 def _customer_region_groups(session) -> list[dict[str, object]]:
@@ -1852,6 +1980,50 @@ def customer_detail_report(customer_id: int):
     try:
         context = _customer_detail_context(session, customer_id)
         return render_template_string(_CUSTOMER_DETAIL_TEMPLATE, **context)
+    finally:
+        session.close()
+
+
+@bp.route("/customer-communications/<int:customer_id>")
+def customer_communication_report(customer_id: int):
+    session = _get_session()
+    try:
+        pdf_bytes = build_customer_communication_report_pdf(session, customer_id)
+        response = Response(pdf_bytes, mimetype="application/pdf")
+        response.headers["Content-Disposition"] = (
+            f'inline; filename="customer-communications-{customer_id}.pdf"'
+        )
+        return response
+    finally:
+        session.close()
+
+
+@bp.route("/wind-turbine-leads/<int:lead_id>/letter")
+def wind_turbine_lead_letter_report(lead_id: int):
+    session = _get_session()
+    try:
+        pdf_bytes = build_wind_turbine_lead_letter_pdf(session, lead_id)
+        response = Response(pdf_bytes, mimetype="application/pdf")
+        response.headers["Content-Disposition"] = (
+            f'inline; filename="wind-turbine-lead-letter-{lead_id}.pdf"'
+        )
+        return response
+    finally:
+        session.close()
+
+
+@bp.route("/wind-turbine-leads/<int:lead_id>/follow-up-letter/<int:detail_id>")
+def wind_turbine_lead_follow_up_letter_report(lead_id: int, detail_id: int):
+    session = _get_session()
+    try:
+        pdf_bytes = build_wind_turbine_lead_follow_up_letter_pdf(
+            session, lead_id, detail_id
+        )
+        response = Response(pdf_bytes, mimetype="application/pdf")
+        response.headers["Content-Disposition"] = (
+            f'inline; filename="wind-turbine-lead-follow-up-letter-{lead_id}-{detail_id}.pdf"'
+        )
+        return response
     finally:
         session.close()
 

@@ -1,4 +1,3 @@
-18. 2026-04-20: F-066 Customer Extended Fields implemented with expanded customer model, grouped forms, tests, and ADR.
 19. 2026-04-20: F-067 Service Extended Fields implemented with expanded service model fields, persistence test, and ADR.
 20. 2026-04-20: F-068 Search and Filtering implemented with customer, field service, parts, and packing list index filters, packing list header fields, tests, migration, and ADR.
 21. 2026-04-20: F-069 Pagination implemented with shared server-side page controls, configurable page size, list-view updates, tests, and ADR.
@@ -14,3 +13,4 @@
 31. 2026-04-20: F-079 Error Handling and 404/500 Pages implemented with custom error pages, global exception logging, tests, and ADR.
 32. 2026-04-20: F-080 Session Management Middleware implemented with shared request-session helper, teardown cleanup, regression test, and ADR.
 33. 2026-04-20: F-081 Report - Toolset (PDF) implemented with customer tool detail PDF output, route, tests, and ADR.
+34. 2026-04-20: F-082 Report - Communication and Lead Letters (PDF) implemented with customer communication, wind turbine lead letter, and follow-up letter PDF routes, tests, and ADR.
