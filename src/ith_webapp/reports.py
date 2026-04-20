@@ -1,12 +1,17 @@
 from __future__ import annotations
 
+from collections import defaultdict
 from decimal import Decimal
 
-from flask import Blueprint, Response, current_app, request
+from flask import Blueprint, Response, current_app, render_template_string, request
 
 from ith_webapp.models import (
     CheckIn,
     CheckInSub,
+    Customer,
+    CustomerApplication,
+    CustomerApplicationSpecs,
+    CustomerTools,
     ITHTestGauge,
     ServiceMeasurements,
     PackingList,
@@ -16,6 +21,7 @@ from ith_webapp.models import (
     PartsSub,
     Service,
     ServiceSub,
+    Unit,
 )
 
 bp = Blueprint("reports", __name__, url_prefix="/reports")
@@ -331,6 +337,98 @@ def _service_measurement_report_pages(
     return pages
 
 
+def _customer_detail_context(session, customer_id: int) -> dict[str, object]:
+    customer = session.get(Customer, customer_id)
+    if customer is None:
+        raise ValueError(f"Customer {customer_id} not found")
+    applications = (
+        session.query(CustomerApplication)
+        .filter(CustomerApplication.customer_id == customer_id)
+        .order_by(CustomerApplication.id)
+        .all()
+    )
+    tools = (
+        session.query(CustomerTools)
+        .filter(CustomerTools.customer_id == customer_id)
+        .order_by(CustomerTools.id)
+        .all()
+    )
+    return {
+        "customer": customer,
+        "markets": [market.name for market in customer.markets],
+        "applications": [
+            {
+                "application": application,
+                "specs": (
+                    session.query(CustomerApplicationSpecs)
+                    .filter(CustomerApplicationSpecs.application_id == application.id)
+                    .order_by(CustomerApplicationSpecs.id)
+                    .all()
+                ),
+            }
+            for application in applications
+        ],
+        "tools": [
+            {
+                "tool": tool,
+                "unit": session.get(Unit, tool.unit_id) if tool.unit_id is not None else None,
+            }
+            for tool in tools
+        ],
+    }
+
+
+def _customer_region_groups(session) -> list[dict[str, object]]:
+    customers = session.query(Customer).order_by(Customer.customer_name).all()
+    groups: dict[str, list[Customer]] = defaultdict(list)
+    for customer in customers:
+        if customer.markets:
+            for market in customer.markets:
+                groups[market.name].append(customer)
+        else:
+            groups["Unassigned"].append(customer)
+    return [
+        {"name": name, "customers": rows}
+        for name, rows in sorted(groups.items(), key=lambda item: item[0])
+    ]
+
+
+def _customer_responsibility_groups(session) -> list[dict[str, object]]:
+    customers = session.query(Customer).order_by(Customer.customer_name).all()
+    groups: dict[str, list[Customer]] = defaultdict(list)
+    for customer in customers:
+        label = (
+            f"Responsibility {customer.responsibility_id}"
+            if customer.responsibility_id is not None
+            else "Unassigned"
+        )
+        groups[label].append(customer)
+    return [
+        {"name": name, "customers": rows}
+        for name, rows in sorted(groups.items(), key=lambda item: item[0])
+    ]
+
+
+def _customer_pricing_rows(session) -> list[Customer]:
+    return session.query(Customer).order_by(Customer.customer_name).all()
+
+
+def _customer_tools_rows(session) -> list[dict[str, object]]:
+    rows = (
+        session.query(CustomerTools)
+        .order_by(CustomerTools.id)
+        .all()
+    )
+    return [
+        {
+            "customer": row.customer,
+            "tool": row,
+            "unit": session.get(Unit, row.unit_id) if row.unit_id is not None else None,
+        }
+        for row in rows
+    ]
+
+
 def _paginate(lines: list[str], lines_per_page: int = 24) -> list[list[str]]:
     pages: list[list[str]] = []
     current: list[str] = []
@@ -531,6 +629,111 @@ def build_service_measurements_pdf(session, service_id: int) -> bytes:
     return _build_pdf(pages)
 
 
+_CUSTOMER_DETAIL_TEMPLATE = """
+{% extends "base.html" %}
+{% block title %}Customer Report - ITH{% endblock %}
+{% block content %}
+<h1>Customer Report</h1>
+<table>
+  <tr><th>Name</th><td>{{ customer.customer_name or "" }}</td></tr>
+  <tr><th>Card Code</th><td>{{ customer.card_code or "" }}</td></tr>
+  <tr><th>Active</th><td>{{ "Yes" if customer.active else "No" }}</td></tr>
+  <tr><th>Website</th><td>{{ customer.website or "" }}</td></tr>
+  <tr><th>Comments</th><td>{{ customer.comments or "" }}</td></tr>
+</table>
+<section>
+  <h2>Markets</h2>
+  {% if markets %}
+  <ul>{% for market in markets %}<li>{{ market }}</li>{% endfor %}</ul>
+  {% else %}<p>No markets assigned.</p>{% endif %}
+</section>
+<section>
+  <h2>Applications</h2>
+  {% if applications %}
+  {% for item in applications %}
+  <h3>{{ item.application.name }}</h3>
+  <p>{{ item.application.description or "" }}</p>
+  {% if item.specs %}
+  <ul>{% for spec in item.specs %}<li>{{ spec.key }}: {{ spec.value or "" }}</li>{% endfor %}</ul>
+  {% endif %}
+  {% endfor %}
+  {% else %}<p>No applications assigned.</p>{% endif %}
+</section>
+<section>
+  <h2>Tools</h2>
+  {% if tools %}
+  <ul>
+    {% for item in tools %}
+    <li>{{ item.tool.serial_number }}{% if item.tool.fab_number %} | {{ item.tool.fab_number }}{% endif %}{% if item.unit %} | {{ item.unit.name }}{% endif %}</li>
+    {% endfor %}
+  </ul>
+  {% else %}<p>No tools assigned.</p>{% endif %}
+</section>
+{% endblock %}
+"""
+
+_CUSTOMER_GROUP_TEMPLATE = """
+{% extends "base.html" %}
+{% block title %}{{ title }} - ITH{% endblock %}
+{% block content %}
+<h1>{{ title }}</h1>
+{% for group in groups %}
+<section>
+  <h2>{{ group.name }}</h2>
+  <ul>{% for customer in group.customers %}<li>{{ customer.customer_name }}</li>{% endfor %}</ul>
+</section>
+{% endfor %}
+{% endblock %}
+"""
+
+_CUSTOMER_PRICING_TEMPLATE = """
+{% extends "base.html" %}
+{% block title %}Customer Pricing Report - ITH{% endblock %}
+{% block content %}
+<h1>Customer Pricing Report</h1>
+<table>
+  <thead>
+    <tr><th>Name</th><th>Card Code</th><th>Multiplier</th><th>Active</th></tr>
+  </thead>
+  <tbody>
+    {% for customer in customers %}
+    <tr>
+      <td>{{ customer.customer_name }}</td>
+      <td>{{ customer.card_code or "" }}</td>
+      <td>{{ customer.multiplier or "" }}</td>
+      <td>{{ "Yes" if customer.active else "No" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
+"""
+
+_CUSTOMER_TOOLS_TEMPLATE = """
+{% extends "base.html" %}
+{% block title %}Customer Tools Inventory - ITH{% endblock %}
+{% block content %}
+<h1>Customer Tools Inventory</h1>
+<table>
+  <thead>
+    <tr><th>Customer</th><th>Serial Number</th><th>Fab Number</th><th>Model</th><th>Unit</th></tr>
+  </thead>
+  <tbody>
+    {% for item in rows %}
+    <tr>
+      <td>{{ item.customer.customer_name }}</td>
+      <td>{{ item.tool.serial_number }}</td>
+      <td>{{ item.tool.fab_number or "" }}</td>
+      <td>{{ item.tool.model_info or "" }}</td>
+      <td>{{ item.unit.name if item.unit else "" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
+"""
+
+
 @bp.route("/service-multi-quote/<int:service_id>")
 def service_multi_quote_report(service_id: int):
     session = _get_session()
@@ -648,5 +851,69 @@ def service_measurements_report(service_id: int):
             f'inline; filename="service-measurements-{service_id}.pdf"'
         )
         return response
+    finally:
+        session.close()
+
+
+@bp.route("/customers/<int:customer_id>")
+def customer_detail_report(customer_id: int):
+    session = _get_session()
+    try:
+        context = _customer_detail_context(session, customer_id)
+        return render_template_string(_CUSTOMER_DETAIL_TEMPLATE, **context)
+    finally:
+        session.close()
+
+
+@bp.route("/customers/by-region")
+def customer_by_region_report():
+    session = _get_session()
+    try:
+        groups = _customer_region_groups(session)
+        return render_template_string(
+            _CUSTOMER_GROUP_TEMPLATE,
+            title="Customer Report by Region",
+            groups=groups,
+        )
+    finally:
+        session.close()
+
+
+@bp.route("/customers/by-responsibility")
+def customer_by_responsibility_report():
+    session = _get_session()
+    try:
+        groups = _customer_responsibility_groups(session)
+        return render_template_string(
+            _CUSTOMER_GROUP_TEMPLATE,
+            title="Customer Report by Responsibility",
+            groups=groups,
+        )
+    finally:
+        session.close()
+
+
+@bp.route("/customers/pricing")
+def customer_pricing_report():
+    session = _get_session()
+    try:
+        customers = _customer_pricing_rows(session)
+        return render_template_string(
+            _CUSTOMER_PRICING_TEMPLATE,
+            customers=customers,
+        )
+    finally:
+        session.close()
+
+
+@bp.route("/customers/tools-inventory")
+def customer_tools_inventory_report():
+    session = _get_session()
+    try:
+        rows = _customer_tools_rows(session)
+        return render_template_string(
+            _CUSTOMER_TOOLS_TEMPLATE,
+            rows=rows,
+        )
     finally:
         session.close()

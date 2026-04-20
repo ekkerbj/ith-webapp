@@ -1,4 +1,3 @@
-2026-04-19: F-038 SAP repository interface abstraction implemented with runtime-checkable protocols, record dataclasses, tests, and ADR.
 2026-04-19: F-039 SAP pricing waterfall implemented with set_price service, tests, and ADR.
 2026-04-19: F-040 Inventory Reorder Calculation implemented with SAP warehouse reorder dashboard, reorder quantity calculation, tests, and ADR.
 2026-04-19: F-041 Authentication - Firebase Auth Integration implemented with Firebase-backed login, Flask session gating, tests, and ADR.
@@ -14,3 +13,4 @@
 2026-04-19: F-050 Commercial Invoice and SLI PDF implemented with shipping document sections, PDF route, tests, and ADR.
 2026-04-19: F-051 Calibration and Test Certificates PDF implemented with deterministic gauge certificate pages, report route, tests, and ADR.
 2026-04-19: F-052 Service Measurements and Test Reports PDF implemented with service measurement report pages, route, tests, and ADR.
+2026-04-19: F-053 Customer Reports implemented with HTML detail/group/pricing/inventory routes, tests, and ADR.
