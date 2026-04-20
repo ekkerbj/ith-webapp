@@ -15,6 +15,19 @@ def test_create_app_returns_flask_instance():
     assert isinstance(app, Flask)
 
 
+def test_create_app_uses_secure_cookie_settings_in_production(monkeypatch):
+    monkeypatch.setenv("SECRET_KEY", "prod-secret-key")
+    monkeypatch.setenv("DATABASE_URL", "sqlite:///:memory:")
+
+    app = create_app()
+
+    assert app.secret_key == "prod-secret-key"
+    assert app.config["SESSION_COOKIE_HTTPONLY"] is True
+    assert app.config["SESSION_COOKIE_SECURE"] is True
+    assert app.config["SESSION_COOKIE_SAMESITE"] == "Lax"
+    assert app.permanent_session_lifetime.days == 7
+
+
 def test_index_renders_switchboard(client):
     response = client.get("/")
     body = response.get_data(as_text=True)
@@ -83,6 +96,7 @@ def test_login_page_uses_shared_layout_and_styles(client):
     assert 'href="/static/style.css"' in body
     assert 'class="app-shell__content"' in body
     assert "Login" in body
+    assert 'name="csrf_token"' in body
 
 
 def test_login_page_exposes_pwa_metadata_and_app_shell_markup(client):
@@ -94,6 +108,33 @@ def test_login_page_exposes_pwa_metadata_and_app_shell_markup(client):
     assert 'name="theme-color"' in body
     assert 'class="app-shell__header"' in body
     assert 'class="app-shell__nav"' in body
+
+
+def test_login_post_stores_only_minimal_firebase_session(client, app):
+    app.config["FIREBASE_AUTH_CLIENT"] = lambda email, password: {
+        "email": email,
+        "idToken": "token-123",
+        "refreshToken": "refresh-123",
+        "localId": "local-123",
+        "role": "sales",
+    }
+
+    login_page = client.get("/login?next=/customers/")
+    csrf_token = login_page.get_data(as_text=True).split('name="csrf_token" value="')[1].split('"', 1)[0]
+
+    response = client.post(
+        "/login?next=/customers/",
+        data={"email": "user@example.com", "password": "secret", "csrf_token": csrf_token},
+    )
+
+    assert response.status_code == 302
+    with client.session_transaction() as session:
+        firebase_user = session.get("firebase_user")
+        assert firebase_user == {
+            "email": "user@example.com",
+            "local_id": "local-123",
+            "role": "sales",
+        }
 
 
 def test_missing_route_renders_custom_404_page():
@@ -153,6 +194,8 @@ def test_stylesheet_includes_list_row_formatting_rules(client):
 
 def test_default_startup_creates_tables(tmp_path):
     db_path = tmp_path / "test.db"
+    from os import environ
+    environ["SECRET_KEY"] = "prod-secret-key"
     app = create_app()
     app.config["DATABASE_URL"] = f"sqlite:///{db_path}"
     # Force re-initialization with the file-based DB
@@ -182,6 +225,8 @@ def test_create_app_uses_database_url_environment_variable(monkeypatch):
         "DATABASE_URL",
         "postgresql+psycopg://user:pass@db.example.com/ith",
     )
+    monkeypatch.setenv("SECRET_KEY", "prod-secret-key")
+    monkeypatch.delenv("SESSION_COOKIE_SECURE", raising=False)
     monkeypatch.setattr("ith_webapp.app.create_session_factory", fake_create_session_factory)
     monkeypatch.setattr("ith_webapp.app.Base.metadata.create_all", lambda bind: None)
 

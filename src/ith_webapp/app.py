@@ -1,6 +1,8 @@
 from decimal import Decimal
 import json
 import os
+import secrets
+from datetime import timedelta
 from urllib import error, request as urllib_request
 
 from flask import Flask, abort, current_app, redirect, render_template_string, request, session, url_for
@@ -213,9 +215,23 @@ def _authorize_request() -> None:
 
 def create_app(testing: bool = False) -> Flask:
     app = Flask(__name__)
-    app.secret_key = app.config.get("SECRET_KEY") or "dev-only-secret-key"
+    secret_key = os.getenv("SECRET_KEY")
+    if not secret_key:
+        if testing:
+            secret_key = "dev-only-secret-key"
+        else:
+            raise RuntimeError("SECRET_KEY is required outside tests")
+    app.secret_key = secret_key
     app.config["AUTH_REQUIRED"] = not testing
     app.config.setdefault("LIST_PAGE_SIZE", 20)
+    app.config["SESSION_COOKIE_HTTPONLY"] = True
+    app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+    secure_cookie = os.getenv("SESSION_COOKIE_SECURE")
+    if secure_cookie is None:
+        app.config["SESSION_COOKIE_SECURE"] = not testing and os.getenv("FLASK_DEBUG") not in {"1", "true", "True"}
+    else:
+        app.config["SESSION_COOKIE_SECURE"] = secure_cookie.lower() == "true"
+    app.permanent_session_lifetime = timedelta(days=7)
 
     if testing:
         app.config["TESTING"] = True
@@ -314,6 +330,31 @@ def create_app(testing: bool = False) -> Flask:
             return redirect(url_for("login", next=next_url))
         _authorize_request()
 
+    @app.before_request
+    def require_csrf_token():
+        if not app.config.get("AUTH_REQUIRED", True):
+            return None
+        if request.method in {"GET", "HEAD", "OPTIONS"}:
+            return None
+        if request.endpoint in {"static"}:
+            return None
+        if request.endpoint in {"login_post", "logout"}:
+            token = session.get("csrf_token")
+            submitted_token = request.form.get("csrf_token")
+            if not token or not submitted_token or submitted_token != token:
+                abort(400)
+            return None
+        token = session.get("csrf_token")
+        submitted_token = request.form.get("csrf_token")
+        if not token or not submitted_token or submitted_token != token:
+            abort(400)
+
+    @app.context_processor
+    def inject_csrf_token():
+        if "csrf_token" not in session:
+            session["csrf_token"] = secrets.token_urlsafe(32)
+        return {"csrf_token": session["csrf_token"]}
+
     @app.route("/login", methods=["GET"])
     def login():
         return render_template_string(
@@ -323,6 +364,7 @@ def create_app(testing: bool = False) -> Flask:
             {% block content %}
             <h1>Login</h1>
             <form method="post">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
               <label>Email <input type="email" name="email"></label>
               <label>Password <input type="password" name="password"></label>
               <button type="submit">Sign in</button>
@@ -346,8 +388,6 @@ def create_app(testing: bool = False) -> Flask:
         payload = auth_client(email, password)
         session["firebase_user"] = {
             "email": payload["email"],
-            "id_token": payload.get("idToken"),
-            "refresh_token": payload.get("refreshToken"),
             "local_id": payload.get("localId"),
             "role": _resolve_role(payload),
         }

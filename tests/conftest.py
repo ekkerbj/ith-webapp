@@ -37,10 +37,15 @@ def client(app) -> FlaskClient:
         "localId": "test-local-id",
     }
     client = app.test_client()
-    client.post(
-        "/login?next=/",
-        data={"email": "tester@example.com", "password": "password"},
-    )
+    login_page = client.get("/login?next=/")
+    body = login_page.get_data(as_text=True)
+    csrf_token = None
+    if 'name="csrf_token" value="' in body:
+        csrf_token = body.split('name="csrf_token" value="', 1)[1].split('"', 1)[0]
+    form_data = {"email": "tester@example.com", "password": "password"}
+    if csrf_token is not None:
+        form_data["csrf_token"] = csrf_token
+    client.post("/login?next=/", data=form_data)
     return client
 
 

@@ -28,6 +28,7 @@
     <a href="{{ edit_url }}">Edit</a>
 </p>
 <form method="post" action="{{ delete_url }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <button type="submit">Delete</button>
 </form>
 {% endblock %}

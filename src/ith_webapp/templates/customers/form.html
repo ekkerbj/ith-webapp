@@ -13,6 +13,7 @@
 {%- endmacro %}
 
 <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     <fieldset>
         <legend>Account Details</legend>
         <label for="customer_name">Customer Name</label>

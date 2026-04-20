@@ -1,0 +1,58 @@
+# Local Setup
+
+This project is a Flask app that uses SQLite for local development and tests by default.
+
+## Prerequisites
+
+- Python 3.12+
+- `virtualenv` if `python3-venv` is unavailable
+
+## Install
+
+```bash
+virtualenv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
+```
+
+## Run Locally
+
+```bash
+flask --app src/ith_webapp/app:create_app run --debug
+```
+
+Notes:
+
+- The default local database is SQLite at `sqlite:///ith.db`.
+- Tables are created automatically on startup.
+- Set `DATABASE_URL` if you want to point the app at another database.
+- Set `FIREBASE_API_KEY` only if you want to use the real login flow.
+
+## Test
+
+```bash
+pytest
+```
+
+With coverage:
+
+```bash
+pytest --cov=ith_webapp
+```
+
+## Migrations
+
+If schema migrations need to be applied locally:
+
+```bash
+alembic upgrade head
+```
+
+## Docker
+
+Build and run the container locally:
+
+```bash
+docker build -t ith-webapp .
+docker run -p 8080:8080 -e PORT=8080 ith-webapp
+```
