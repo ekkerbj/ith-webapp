@@ -21,6 +21,7 @@ from ith_webapp.models import (
     ITHTestGauge,
     FieldService,
     OrderConfirmation,
+    PartLabel,
     ServiceMeasurements,
     PackingList,
     PackingListSub,
@@ -618,7 +619,7 @@ def _commercial_invoice_and_sli_lines(
     return lines
 
 
-def _check_in_lines(check_in: CheckIn, subs: list[CheckInSub]) -> list[str]:
+def _check_in_lines(check_in: CheckIn, subs: list[CheckInSub], labels: list[PartLabel]) -> list[str]:
     lines = [
         "Check In Document",
         "Tool Receipt Record",
@@ -638,6 +639,17 @@ def _check_in_lines(check_in: CheckIn, subs: list[CheckInSub]) -> list[str]:
                 f"Quoted {'Yes' if sub.quoted else 'No'} | "
                 f"Approved {'Yes' if sub.approved else 'No'} | "
                 f"Closed {'Yes' if sub.closed else 'No'}"
+            )
+    lines.extend(["", "Part Labels"])
+    if not labels:
+        lines.append("(none)")
+    else:
+        for label in labels:
+            lines.append(
+                " - "
+                f"{label.part_number} | Qty {label.quantity} | "
+                f"{label.description or ''}"
+                + (f" | Warehouse {label.warehouse}" if label.warehouse else "")
             )
     return lines
 
@@ -1650,7 +1662,13 @@ def build_check_in_pdf(session, check_in_id: int) -> bytes:
         .order_by(CheckInSub.id)
         .all()
     )
-    pages = _paginate(_check_in_lines(check_in, subs))
+    labels = (
+        session.query(PartLabel)
+        .filter(PartLabel.check_in_id == check_in_id)
+        .order_by(PartLabel.id)
+        .all()
+    )
+    pages = _paginate(_check_in_lines(check_in, subs, labels))
     return _build_pdf(pages)
 
 

@@ -17,6 +17,7 @@ class CheckIn(Base):
 
     customer = relationship("Customer", backref="check_ins")
     subs = relationship("CheckInSub", back_populates="check_in", cascade="all, delete-orphan")
+    part_labels = relationship("PartLabel", back_populates="check_in", cascade="all, delete-orphan")
 
 class CheckInSub(Base):
     __tablename__ = "check_in_sub"

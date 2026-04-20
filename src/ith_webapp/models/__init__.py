@@ -9,6 +9,7 @@ from ith_webapp.models.customer_tools import CustomerTools, CustomerToolsSub  # 
 from ith_webapp.models.unit import Unit  # noqa: F401
 from ith_webapp.models.customer_application import CustomerApplication, CustomerApplicationSpecs  # noqa: F401
 from ith_webapp.models.check_in import CheckIn, CheckInSub  # noqa: F401
+from ith_webapp.models.part_label import PartLabel  # noqa: F401
 from ith_webapp.models.service import Service  # noqa: F401
 from ith_webapp.models.field_service import FieldService  # noqa: F401
 from ith_webapp.models.field_service_status import FieldServiceStatus  # noqa: F401
@@ -48,6 +49,7 @@ __all__ = [
     "CustomerApplicationSpecs",
     "CheckIn",
     "CheckInSub",
+    "PartLabel",
     "Service",
     "FieldService",
     "FieldServiceStatus",

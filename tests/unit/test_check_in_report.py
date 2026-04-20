@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from ith_webapp.models import CheckIn, CheckInSub, Customer
+from ith_webapp.models import CheckIn, CheckInSub, Customer, PartLabel
 from ith_webapp.reports import build_check_in_pdf
 
 
@@ -57,3 +57,31 @@ def test_check_in_report_route_returns_pdf(app):
         assert response.data.startswith(b"%PDF")
     finally:
         session.close()
+
+
+def test_build_check_in_pdf_includes_part_labels(session: Session):
+    customer = Customer(customer_name="Acme")
+    session.add(customer)
+    session.flush()
+
+    check_in = CheckIn(customer_id=customer.customer_id, description="Tool receipt")
+    session.add(check_in)
+    session.flush()
+
+    session.add(
+        PartLabel(
+            check_in_id=check_in.id,
+            part_number="P-9001",
+            description="Replacement seal",
+            warehouse="Main Warehouse",
+            quantity=2,
+        )
+    )
+    session.commit()
+
+    pdf_bytes = build_check_in_pdf(session, check_in.id)
+
+    assert pdf_bytes.startswith(b"%PDF")
+    assert b"Part Labels" in pdf_bytes
+    assert b"P-9001" in pdf_bytes
+    assert b"Replacement seal" in pdf_bytes
