@@ -24,6 +24,29 @@ def _create_test_app_with_part_and_sales():
     return app
 
 
+def test_parts_list_filters_by_item_code_or_description():
+    app = create_app(testing=True)
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(bind=engine)
+
+    session = factory()
+    session.add(Part(part_number="P-1001", description="Test Part", active=True))
+    session.add(Part(part_number="P-2002", description="Other Part", active=True))
+    session.commit()
+    session.close()
+
+    app.config["SESSION_FACTORY"] = factory
+    client = app.test_client()
+
+    response = client.get("/parts/?q=test")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "P-1001" in html
+    assert "P-2002" not in html
+
+
 def test_part_sold_history_renders_sales_for_a_part():
     app = _create_test_app_with_part_and_sales()
     client = app.test_client()
@@ -34,3 +57,17 @@ def test_part_sold_history_renders_sales_for_a_part():
     html = response.get_data(as_text=True)
     assert "P-1001" in html
     assert "7" in html
+
+
+def test_part_labels_route_renders_a_printable_label_with_barcode():
+    app = _create_test_app_with_part_and_sales()
+    client = app.test_client()
+
+    response = client.get("/parts/1/labels?format=short&warehouse=Main+Warehouse")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "P-1001" in html
+    assert "Test Part" in html
+    assert "Main Warehouse" in html
+    assert "<svg" in html

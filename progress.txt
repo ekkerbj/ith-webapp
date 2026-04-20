@@ -1,6 +1,3 @@
-2. 2026-04-19: F-050 Commercial Invoice and SLI PDF implemented with shipping document sections, PDF route, tests, and ADR.
-3. 2026-04-19: F-051 Calibration and Test Certificates PDF implemented with deterministic gauge certificate pages, report route, tests, and ADR.
-4. 2026-04-19: F-052 Service Measurements and Test Reports PDF implemented with service measurement report pages, route, tests, and ADR.
 5. 2026-04-19: F-053 Customer Reports implemented with HTML detail/group/pricing/inventory routes, tests, and ADR.
 6. 2026-04-19: F-054 Field Service Reports implemented with PDF report, summary, and customer-facing timesheet routes, tests, and ADR.
 7. 2026-04-19: F-055 SAP Financial Summaries implemented with server-rendered HTML breakdown tables, tests, and ADR.
@@ -14,3 +11,6 @@
 15. 2026-04-19: F-063 Customer Mailing and Address Labels implemented with mailing/address/SAP label routes, tests, and ADR.
 16. 2026-04-19: F-064 Demo Contract implemented with demo-contract rental alias routes, PDF report, tests, and ADR.
 17. 2026-04-20: F-065 Warranty Claims implemented with linked quote CRUD, report routes, tests, migration, and ADR.
+18. 2026-04-20: F-066 Customer Extended Fields implemented with expanded customer model, grouped forms, tests, and ADR.
+19. 2026-04-20: F-067 Service Extended Fields implemented with expanded service model fields, persistence test, and ADR.
+20. 2026-04-20: F-068 Search and Filtering implemented with customer, field service, parts, and packing list index filters, packing list header fields, tests, migration, and ADR.

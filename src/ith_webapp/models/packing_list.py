@@ -5,4 +5,5 @@ class PackingList(Base):
     __tablename__ = 'packing_list'
 
     id = Column(Integer, primary_key=True)
-    # Add additional fields as needed for header info
+    customer_name = Column(String(100), nullable=True)
+    packing_date = Column(String(10), nullable=True)

@@ -167,11 +167,12 @@ def create_app(testing: bool = False) -> Flask:
                 "Packing Lists",
                 [
                     ("Consignment Lists", "consignment_list.consignment_list"),
+                    ("Packing List Index", "packing_list_workflow.packing_list_index"),
                     ("Ready to Produce", "packing_list_workflow.ready_to_produce"),
                     ("Ready to Ship", "packing_list_workflow.ready_to_ship"),
                 ],
             ),
-            ("Parts", [("Parts detail pages coming soon", None)]),
+            ("Parts", [("Parts", "parts.part_list")]),
             (
                 "Field Service",
                 [
