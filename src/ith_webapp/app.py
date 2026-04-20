@@ -187,7 +187,10 @@ def create_app(testing: bool = False) -> Flask:
             ),
             (
                 "Reports",
-                [("Inventory Reorder Dashboard", "inventory_reorder_dashboard"), ("Audit Trail", None)],
+                [
+                    ("Inventory Reorder Dashboard", "inventory_reorder_dashboard"),
+                    ("Audit Trail", "reports.audit_trail_report"),
+                ],
             ),
             ("Admin", [("Login/logout and access controls", None)]),
         ]

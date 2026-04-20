@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+from datetime import date, datetime, time, timezone
 from collections import defaultdict
 from decimal import Decimal
 
-from flask import Blueprint, Response, current_app, render_template_string, request
+from flask import Blueprint, Response, abort, current_app, render_template_string, request
 
 from ith_webapp.models import (
     CheckIn,
     CheckInSub,
+    AuditTrail,
     Customer,
     CustomerApplication,
     CustomerApplicationSpecs,
@@ -838,6 +840,40 @@ def _repair_time_analysis_rows(session) -> list[dict[str, object]]:
     ]
 
 
+def _parse_audit_trail_date(value: str | None) -> date | None:
+    if not value:
+        return None
+    try:
+        return date.fromisoformat(value)
+    except ValueError as exc:
+        abort(400, description=f"Invalid audit trail date: {value}")
+
+
+def _audit_trail_rows(session) -> list[AuditTrail]:
+    query = session.query(AuditTrail)
+    entity = (request.args.get("entity") or "").strip()
+    field = (request.args.get("field") or "").strip()
+    user = (request.args.get("user") or "").strip()
+    if entity:
+        query = query.filter(AuditTrail.table_name == entity)
+    if field:
+        query = query.filter(AuditTrail.field_name == field)
+    if user:
+        query = query.filter(AuditTrail.changed_by == user)
+
+    start_date = _parse_audit_trail_date(request.args.get("start_date"))
+    end_date = _parse_audit_trail_date(request.args.get("end_date"))
+    if start_date is not None:
+        query = query.filter(
+            AuditTrail.changed_at >= datetime.combine(start_date, time.min, tzinfo=timezone.utc)
+        )
+    if end_date is not None:
+        query = query.filter(
+            AuditTrail.changed_at <= datetime.combine(end_date, time.max, tzinfo=timezone.utc)
+        )
+    return query.order_by(AuditTrail.changed_at.desc(), AuditTrail.audit_trail_id.desc()).all()
+
+
 def _paginate(lines: list[str], lines_per_page: int = 24) -> list[list[str]]:
     pages: list[list[str]] = []
     current: list[str] = []
@@ -903,6 +939,54 @@ _SHOP_DATA_TEMPLATE = """
     {% endfor %}
     {% else %}
     <tr><td colspan="5">(none)</td></tr>
+    {% endif %}
+  </tbody>
+</table>
+{% endblock %}
+"""
+
+_AUDIT_TRAIL_TEMPLATE = """
+{% extends "base.html" %}
+{% block title %}Audit Trail Report - ITH{% endblock %}
+{% block content %}
+<h1>Audit Trail Report</h1>
+<form method="get">
+  <label>Entity <input type="text" name="entity" value="{{ entity }}"></label>
+  <label>Field <input type="text" name="field" value="{{ field }}"></label>
+  <label>User <input type="text" name="user" value="{{ user }}"></label>
+  <label>Start Date <input type="date" name="start_date" value="{{ start_date }}"></label>
+  <label>End Date <input type="date" name="end_date" value="{{ end_date }}"></label>
+  <button type="submit">Filter</button>
+</form>
+<table>
+  <thead>
+    <tr>
+      <th>Entity</th>
+      <th>Record</th>
+      <th>Action</th>
+      <th>Field</th>
+      <th>User</th>
+      <th>Old Value</th>
+      <th>New Value</th>
+      <th>Changed At</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% if entries %}
+    {% for entry in entries %}
+    <tr>
+      <td>{{ entry.table_name }}</td>
+      <td>{{ entry.record_id }}</td>
+      <td>{{ entry.action }}</td>
+      <td>{{ entry.field_name }}</td>
+      <td>{{ entry.changed_by or "" }}</td>
+      <td>{{ entry.old_value or "" }}</td>
+      <td>{{ entry.new_value or "" }}</td>
+      <td>{{ entry.changed_at }}</td>
+    </tr>
+    {% endfor %}
+    {% else %}
+    <tr><td colspan="7">(none)</td></tr>
     {% endif %}
   </tbody>
 </table>
@@ -1664,6 +1748,26 @@ def open_repair_list_report():
     try:
         rows = _open_repair_list_rows(session)
         return render_template_string(_OPEN_REPAIR_LIST_TEMPLATE, rows=rows)
+    finally:
+        session.close()
+
+
+@bp.route("/audit-trail")
+def audit_trail_report():
+    session = _get_session()
+    try:
+        entity = (request.args.get("entity") or "").strip()
+        field = (request.args.get("field") or "").strip()
+        rows = _audit_trail_rows(session)
+        return render_template_string(
+            _AUDIT_TRAIL_TEMPLATE,
+            entries=rows,
+            entity=entity,
+            field=field,
+            user=(request.args.get("user") or "").strip(),
+            start_date=(request.args.get("start_date") or "").strip(),
+            end_date=(request.args.get("end_date") or "").strip(),
+        )
     finally:
         session.close()
 

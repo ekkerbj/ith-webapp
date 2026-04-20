@@ -19,6 +19,7 @@ def record_audit_change(
     record_id: int,
     action: str,
     changes: Mapping[str, tuple[Any, Any]],
+    changed_by: str | None = None,
 ) -> list[AuditTrail]:
     entries: list[AuditTrail] = []
     for field_name, (old_value, new_value) in changes.items():
@@ -29,6 +30,7 @@ def record_audit_change(
             old_value=_stringify(old_value),
             new_value=_stringify(new_value),
             action=action,
+            changed_by=changed_by,
         )
         session.add(entry)
         entries.append(entry)

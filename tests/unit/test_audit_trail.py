@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from ith_webapp.models.audit_trail import AuditTrail  # noqa: F401
 from ith_webapp.models.customer import Customer
 from ith_webapp.app import create_app
@@ -66,3 +68,45 @@ def test_customer_edit_records_and_renders_audit_history():
     assert "customer_name" in html
     assert "Acme Corp" in html
     assert "Acme Updated" in html
+
+
+def test_audit_trail_report_filters_by_entity_field_and_date_range(app, client):
+    factory = app.config["SESSION_FACTORY"]
+    session = factory()
+    try:
+        session.add_all(
+            [
+                AuditTrail(
+                    table_name="customer",
+                    record_id=1,
+                    field_name="website",
+                    old_value="https://old.example.com",
+                    new_value="https://new.example.com",
+                    action="edit",
+                    changed_by="tester@example.com",
+                    changed_at=datetime(2026, 4, 20, tzinfo=timezone.utc),
+                ),
+                AuditTrail(
+                    table_name="customer",
+                    record_id=2,
+                    field_name="card_code",
+                    old_value="C0001",
+                    new_value="C0002",
+                    action="edit",
+                    changed_by="other@example.com",
+                    changed_at=datetime(2026, 4, 20, tzinfo=timezone.utc),
+                ),
+            ]
+        )
+        session.commit()
+
+        response = client.get(
+            "/reports/audit-trail?entity=customer&field=website&user=tester@example.com&start_date=2026-04-20&end_date=2026-04-20"
+        )
+
+        assert response.status_code == 200
+        html = response.get_data(as_text=True)
+        assert "website" in html
+        assert "card_code" not in html
+    finally:
+        session.close()
