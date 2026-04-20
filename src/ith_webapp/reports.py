@@ -668,6 +668,60 @@ def _customer_tools_rows(session) -> list[dict[str, object]]:
     ]
 
 
+def _open_repair_list_rows(session) -> list[dict[str, object]]:
+    rows = (
+        session.query(CheckInSub, CheckIn, Customer)
+        .join(CheckIn, CheckIn.id == CheckInSub.check_in_id)
+        .join(Customer, Customer.customer_id == CheckIn.customer_id)
+        .filter(CheckInSub.closed.is_(False))
+        .order_by(CheckIn.received_at, CheckIn.id, CheckInSub.id)
+        .all()
+    )
+    return [
+        {"sub": sub, "check_in": check_in, "customer": customer}
+        for sub, check_in, customer in rows
+    ]
+
+
+def _shop_data_rows(session) -> list[dict[str, object]]:
+    rows = (
+        session.query(ServiceTime, Service, Customer)
+        .join(Service, Service.service_id == ServiceTime.service_id)
+        .join(Customer, Customer.customer_id == Service.customer_id)
+        .order_by(ServiceTime.date, ServiceTime.id)
+        .all()
+    )
+    summary: dict[str, dict[str, object]] = {}
+    for time_entry, service, _customer in rows:
+        technician = time_entry.technician or "Unassigned"
+        row = summary.setdefault(
+            technician,
+            {
+                "technician": technician,
+                "status_set": set(),
+                "service_ids": set(),
+                "total_hours": Decimal("0"),
+                "total_labor": Decimal("0"),
+            },
+        )
+        row["status_set"].add(service.order_status or "Unassigned")
+        row["service_ids"].add(service.service_id)
+        row["total_hours"] += Decimal(str(time_entry.hours))
+        row["total_labor"] += Decimal(str(time_entry.hours)) * Decimal(
+            str(time_entry.labor_rate)
+        )
+    return [
+        {
+            "technician": row["technician"],
+            "statuses": sorted(row["status_set"]),
+            "service_count": len(row["service_ids"]),
+            "total_hours": f"{row['total_hours']:.2f}",
+            "total_labor": f"{row['total_labor']:.2f}",
+        }
+        for row in sorted(summary.values(), key=lambda item: item["technician"])
+    ]
+
+
 def _paginate(lines: list[str], lines_per_page: int = 24) -> list[list[str]]:
     pages: list[list[str]] = []
     current: list[str] = []
@@ -679,6 +733,65 @@ def _paginate(lines: list[str], lines_per_page: int = 24) -> list[list[str]]:
     if current:
         pages.append(current)
     return pages or [["Service Multi Quote"]]
+
+
+_OPEN_REPAIR_LIST_TEMPLATE = """
+{% extends "base.html" %}
+{% block title %}Open Repair List - ITH{% endblock %}
+{% block content %}
+<h1>Open Repair List</h1>
+<table>
+  <thead>
+    <tr><th>Customer</th><th>Received</th><th>Tool</th><th>Inspected</th><th>Quoted</th><th>Approved</th></tr>
+  </thead>
+  <tbody>
+    {% if rows %}
+    {% for row in rows %}
+    <tr>
+      <td>{{ row.customer.customer_name }}</td>
+      <td>{{ row.check_in.received_at.isoformat() }}</td>
+      <td>Tool {{ row.sub.tool_id }}</td>
+      <td>{{ "Yes" if row.sub.inspected else "No" }}</td>
+      <td>{{ "Yes" if row.sub.quoted else "No" }}</td>
+      <td>{{ "Yes" if row.sub.approved else "No" }}</td>
+    </tr>
+    {% endfor %}
+    {% else %}
+    <tr><td colspan="6">(none)</td></tr>
+    {% endif %}
+  </tbody>
+</table>
+{% endblock %}
+"""
+
+
+_SHOP_DATA_TEMPLATE = """
+{% extends "base.html" %}
+{% block title %}ITH Shop Data - ITH{% endblock %}
+{% block content %}
+<h1>ITH Shop Data</h1>
+<table>
+  <thead>
+    <tr><th>Technician</th><th>Statuses</th><th>Services</th><th>Total Hours</th><th>Total Labor</th></tr>
+  </thead>
+  <tbody>
+    {% if rows %}
+    {% for row in rows %}
+    <tr>
+      <td>{{ row.technician }}</td>
+      <td>{{ row.statuses | join(", ") }}</td>
+      <td>{{ row.service_count }}</td>
+      <td>{{ row.total_hours }}</td>
+      <td>{{ row.total_labor }}</td>
+    </tr>
+    {% endfor %}
+    {% else %}
+    <tr><td colspan="5">(none)</td></tr>
+    {% endif %}
+  </tbody>
+</table>
+{% endblock %}
+"""
 
 
 def _content_stream(lines: list[str]) -> bytes:
@@ -1272,6 +1385,26 @@ def field_service_timesheet_report(field_service_id: int):
             f'inline; filename="field-service-timesheet-{field_service_id}.pdf"'
         )
         return response
+    finally:
+        session.close()
+
+
+@bp.route("/check-in/open-repair-list")
+def open_repair_list_report():
+    session = _get_session()
+    try:
+        rows = _open_repair_list_rows(session)
+        return render_template_string(_OPEN_REPAIR_LIST_TEMPLATE, rows=rows)
+    finally:
+        session.close()
+
+
+@bp.route("/shop-data")
+def shop_data_report():
+    session = _get_session()
+    try:
+        rows = _shop_data_rows(session)
+        return render_template_string(_SHOP_DATA_TEMPLATE, rows=rows)
     finally:
         session.close()
 

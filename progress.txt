@@ -14,3 +14,4 @@
 2026-04-19: F-054 Field Service Reports implemented with PDF report, summary, and customer-facing timesheet routes, tests, and ADR.
 2026-04-19: F-055 SAP Financial Summaries implemented with server-rendered HTML breakdown tables, tests, and ADR.
 2026-04-19: F-056 Parts Catalog implemented with HTML/PDF report surfaces, BOM and cross-reference sections, tests, and ADR.
+2026-04-19: F-057 Open Repair List and Shop Data implemented with HTML report routes, tests, and ADR.
