@@ -2,13 +2,13 @@ from flask import Blueprint, current_app, redirect, render_template, request, ur
 
 from ith_webapp.models.consignment_list import ConsignmentList
 from ith_webapp.services.pagination import paginate_query
+from ith_webapp.views.session import get_session
 
 bp = Blueprint("consignment_list", __name__, url_prefix="/consignment-lists")
 
 
 def _get_session():
-    factory = current_app.config["SESSION_FACTORY"]
-    return factory()
+    return get_session()
 
 
 @bp.route("/")

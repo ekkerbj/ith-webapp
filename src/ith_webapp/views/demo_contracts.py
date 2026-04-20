@@ -3,13 +3,13 @@ from flask import Blueprint, current_app, redirect, render_template, render_temp
 from ith_webapp.models.rental import Rental
 from ith_webapp.services.date_filtering import current_month_filter
 from ith_webapp.services.pagination import paginate_query
+from ith_webapp.views.session import get_session
 
 bp = Blueprint("demo_contracts", __name__, url_prefix="/demo-contracts")
 
 
 def _get_session():
-    factory = current_app.config["SESSION_FACTORY"]
-    return factory()
+    return get_session()
 
 
 _LIST_TEMPLATE = """

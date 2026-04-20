@@ -2,13 +2,13 @@ from flask import Blueprint, current_app, redirect, render_template, request, ur
 
 from ith_webapp.models.warranty_claim import WarrantyClaim, WarrantyClaimQuote
 from ith_webapp.services.pagination import paginate_query
+from ith_webapp.views.session import get_session
 
 bp = Blueprint("warranty_claims", __name__, url_prefix="/warranty-claims")
 
 
 def _get_session():
-    factory = current_app.config["SESSION_FACTORY"]
-    return factory()
+    return get_session()
 
 
 def _service_ids(raw_value: str | None) -> list[int]:

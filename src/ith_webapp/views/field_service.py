@@ -7,13 +7,13 @@ from ith_webapp.models.field_service import FieldService
 from ith_webapp.models.field_service_status import FieldServiceStatus
 from ith_webapp.services.date_filtering import current_month_filter
 from ith_webapp.services.pagination import paginate_query
+from ith_webapp.views.session import get_session
 
 bp = Blueprint("field_services", __name__, url_prefix="/field-services")
 
 
 def _get_session():
-    factory = current_app.config["SESSION_FACTORY"]
-    return factory()
+    return get_session()
 
 
 @bp.route("/")

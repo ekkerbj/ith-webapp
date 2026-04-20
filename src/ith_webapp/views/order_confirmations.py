@@ -3,13 +3,13 @@ from flask import Blueprint, current_app, redirect, render_template, request, ur
 from ith_webapp.models.order_confirmation import OrderConfirmation
 from ith_webapp.services.date_filtering import current_month_filter
 from ith_webapp.services.pagination import paginate_query
+from ith_webapp.views.session import get_session
 
 bp = Blueprint("order_confirmations", __name__, url_prefix="/order-confirmations")
 
 
 def _get_session():
-    factory = current_app.config["SESSION_FACTORY"]
-    return factory()
+    return get_session()
 
 
 @bp.route("/")

@@ -1,13 +1,13 @@
 from flask import Blueprint, current_app, render_template
 
 from ith_webapp.services.audit_trail import get_audit_history
+from ith_webapp.views.session import get_session
 
 bp = Blueprint("audit_trail", __name__, url_prefix="/audit-trail")
 
 
 def _get_session():
-    factory = current_app.config["SESSION_FACTORY"]
-    return factory()
+    return get_session()
 
 
 @bp.route("/<table_name>/<int:record_id>")

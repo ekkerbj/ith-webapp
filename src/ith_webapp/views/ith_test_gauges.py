@@ -13,13 +13,13 @@ from flask import (
 from ith_webapp.models.ith_test_gauge import ITHTestGauge
 from ith_webapp.services.barcode_generation import generate_code128_svg
 from ith_webapp.services.pagination import paginate_query
+from ith_webapp.views.session import get_session
 
 bp = Blueprint("ith_test_gauges", __name__, url_prefix="/ith-test-gauges")
 
 
 def _get_session():
-    factory = current_app.config["SESSION_FACTORY"]
-    return factory()
+    return get_session()
 
 
 def _parse_date(value: str | None) -> date | None:

@@ -18,6 +18,7 @@ from ith_webapp.models.customer_address import CustomerAddress
 from ith_webapp.repositories.customer_repository import CustomerRepository
 from ith_webapp.services.pagination import paginate_query
 from ith_webapp.services.audit_trail import record_audit_change
+from ith_webapp.views.session import get_session
 
 bp = Blueprint("customers", __name__, url_prefix="/customers")
 
@@ -105,8 +106,7 @@ CUSTOMER_AUDIT_FIELDS = (
 
 
 def _get_session():
-    factory = current_app.config["SESSION_FACTORY"]
-    return factory()
+    return get_session()
 
 
 def _current_user_email() -> str | None:

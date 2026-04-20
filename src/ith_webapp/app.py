@@ -7,6 +7,7 @@ from flask import Flask, abort, current_app, redirect, render_template_string, r
 from werkzeug.exceptions import HTTPException
 
 from ith_webapp.database import Base, create_session_factory
+from ith_webapp.views.session import register_session_middleware
 
 
 def _calculate_reorder_quantity(stock) -> Decimal:
@@ -186,6 +187,8 @@ def create_app(testing: bool = False) -> Flask:
         factory = create_session_factory(database_url)
         Base.metadata.create_all(factory().get_bind())
         app.config["SESSION_FACTORY"] = factory
+
+    register_session_middleware(app)
 
     @app.route("/")
     def index():

@@ -5,6 +5,7 @@ from ith_webapp.models.part import Part
 from ith_webapp.models.parts_sold import PartsSold
 from ith_webapp.services.barcode_generation import generate_code128_svg
 from ith_webapp.services.pagination import paginate_query
+from ith_webapp.views.session import get_session
 
 bp = Blueprint("parts", __name__, url_prefix="/parts")
 
@@ -18,8 +19,7 @@ _LABEL_FORMATS = {
 
 
 def _get_session():
-    factory = current_app.config["SESSION_FACTORY"]
-    return factory()
+    return get_session()
 
 
 def _label_format(name: str | None) -> dict[str, str]:

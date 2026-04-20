@@ -8,6 +8,7 @@ from ith_webapp.models.site_wind_turbine import SiteWindTurbine
 from ith_webapp.models.wind_turbine_lead import WindTurbineLead
 from ith_webapp.models.wind_turbine_lead_detail import WindTurbineLeadDetail
 from ith_webapp.services.pagination import paginate_query
+from ith_webapp.views.session import get_session
 
 
 @dataclass(frozen=True)
@@ -24,8 +25,7 @@ class CrudConfig:
 
 
 def _get_session():
-    factory = current_app.config["SESSION_FACTORY"]
-    return factory()
+    return get_session()
 
 
 def _register_crud_routes(bp: Blueprint, config: CrudConfig) -> None:

@@ -4,13 +4,13 @@ from sqlalchemy import or_
 from ith_webapp.models.packing_list import PackingList
 from ith_webapp.services.barcode_generation import generate_code128_svg
 from ith_webapp.services.pagination import paginate_query
+from ith_webapp.views.session import get_session
 
 bp = Blueprint('packing_list_workflow', __name__)
 
 
 def _get_session():
-    factory = current_app.config["SESSION_FACTORY"]
-    return factory()
+    return get_session()
 
 
 def _render_customer_specific_label(packing_list: PackingList, label_title: str) -> str:
