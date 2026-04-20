@@ -5,18 +5,148 @@
 {% block content %}
 <h1>{{ "Edit" if customer else "New" }} Customer</h1>
 
+{% set errors = errors or {} %}
+{% macro field_errors(name) -%}
+    {% if errors.get(name) %}
+    <p class="field-error">{{ errors.get(name) | join(", ") }}</p>
+    {% endif %}
+{%- endmacro %}
+
 <form method="post">
-    <label for="customer_name">Customer Name</label>
-    <input type="text" id="customer_name" name="customer_name" value="{{ customer.customer_name if customer else '' }}" required>
+    <fieldset>
+        <legend>Account Details</legend>
+        <label for="customer_name">Customer Name</label>
+        <input type="text" id="customer_name" name="customer_name" value="{{ form.customer_name }}" required aria-invalid="{{ 'true' if errors.get('customer_name') else 'false' }}">
+        {{ field_errors('customer_name') }}
 
-    <label for="card_code">Card Code</label>
-    <input type="text" id="card_code" name="card_code" value="{{ customer.card_code if customer else '' }}">
+        <label for="card_code">Card Code</label>
+        <input type="text" id="card_code" name="card_code" value="{{ form.card_code }}">
+        {{ field_errors('card_code') }}
 
-    <label for="active">Active</label>
-    <input type="checkbox" id="active" name="active" {{ 'checked' if customer and customer.active else '' }}>
+        <label for="active">Active</label>
+        <input type="checkbox" id="active" name="active" {{ 'checked' if form.active else '' }}>
 
-    <label for="website">Website</label>
-    <input type="url" id="website" name="website" value="{{ customer.website if customer else '' }}">
+        <label for="website">Website</label>
+        <input type="url" id="website" name="website" value="{{ form.website }}">
+        {{ field_errors('website') }}
+
+        <label for="price_list_num">Price List Num</label>
+        <input type="number" id="price_list_num" name="price_list_num" value="{{ form.price_list_num }}">
+        {{ field_errors('price_list_num') }}
+
+        <label for="sales_rep">Sales Rep</label>
+        <input type="text" id="sales_rep" name="sales_rep" value="{{ form.salesperson }}">
+        {{ field_errors('salesperson') }}
+
+        <label for="territory">Territory</label>
+        <input type="text" id="territory" name="territory" value="{{ form.territory }}">
+        {{ field_errors('territory') }}
+
+        <label for="credit_limit">Credit Limit</label>
+        <input type="number" step="0.01" id="credit_limit" name="credit_limit" value="{{ form.credit_limit }}">
+        {{ field_errors('credit_limit') }}
+    </fieldset>
+
+    <fieldset>
+        <legend>Contact and Tax</legend>
+        <label for="contact_name">Contact Name</label>
+        <input type="text" id="contact_name" name="contact_name" value="{{ form.contact_name }}">
+        {{ field_errors('contact_name') }}
+
+        <label for="phone">Phone</label>
+        <input type="text" id="phone" name="phone" value="{{ form.phone }}">
+        {{ field_errors('phone') }}
+
+        <label for="fax">Fax</label>
+        <input type="text" id="fax" name="fax" value="{{ form.fax }}">
+        {{ field_errors('fax') }}
+
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" value="{{ form.email }}">
+        {{ field_errors('email') }}
+
+        <label for="tax_group">Tax Group</label>
+        <input type="text" id="tax_group" name="tax_group" value="{{ form.tax_group }}">
+        {{ field_errors('tax_group') }}
+
+        <label for="tax_exempt_number">Tax Exempt Number</label>
+        <input type="text" id="tax_exempt_number" name="tax_exempt_number" value="{{ form.tax_exempt_number }}">
+        {{ field_errors('tax_exempt_number') }}
+    </fieldset>
+
+    <fieldset>
+        <legend>Site and Shipping</legend>
+        <label for="plant_name">Plant Name</label>
+        <input type="text" id="plant_name" name="plant_name" value="{{ form.plant_name }}">
+        {{ field_errors('plant_name') }}
+
+        <label for="site_name">Site Name</label>
+        <input type="text" id="site_name" name="site_name" value="{{ form.site_name }}">
+        {{ field_errors('site_name') }}
+
+        <label for="site_address">Site Address</label>
+        <input type="text" id="site_address" name="site_address" value="{{ form.site_address }}">
+        {{ field_errors('site_address') }}
+
+        <label for="site_city">Site City</label>
+        <input type="text" id="site_city" name="site_city" value="{{ form.site_city }}">
+        {{ field_errors('site_city') }}
+
+        <label for="site_state">Site State</label>
+        <input type="text" id="site_state" name="site_state" value="{{ form.site_state }}">
+        {{ field_errors('site_state') }}
+
+        <label for="site_zip_code">Site Zip Code</label>
+        <input type="text" id="site_zip_code" name="site_zip_code" value="{{ form.site_zip_code }}">
+        {{ field_errors('site_zip_code') }}
+
+        <label for="site_country">Site Country</label>
+        <input type="text" id="site_country" name="site_country" value="{{ form.site_country }}">
+        {{ field_errors('site_country') }}
+
+        <label for="ship_via">Ship Via</label>
+        <input type="text" id="ship_via" name="ship_via" value="{{ form.ship_via }}">
+        {{ field_errors('ship_via') }}
+
+        <label for="freight_terms">Freight Terms</label>
+        <input type="text" id="freight_terms" name="freight_terms" value="{{ form.freight_terms }}">
+        {{ field_errors('freight_terms') }}
+    </fieldset>
+
+    <fieldset>
+        <legend>Notes and Workflow</legend>
+        <label for="comments">Comments</label>
+        <textarea id="comments" name="comments">{{ form.comments }}</textarea>
+        {{ field_errors('comments') }}
+
+        <label for="repair_instructions">Repair Instructions</label>
+        <textarea id="repair_instructions" name="repair_instructions">{{ form.repair_instructions }}</textarea>
+        {{ field_errors('repair_instructions') }}
+
+        <label for="multiplier">Multiplier</label>
+        <input type="number" step="0.01" id="multiplier" name="multiplier" value="{{ form.multiplier }}">
+        {{ field_errors('multiplier') }}
+
+        <label for="lead_id">Lead ID</label>
+        <input type="number" id="lead_id" name="lead_id" value="{{ form.lead_id }}">
+        {{ field_errors('lead_id') }}
+
+        <label for="responsibility_id">Responsibility ID</label>
+        <input type="number" id="responsibility_id" name="responsibility_id" value="{{ form.responsibility_id }}">
+        {{ field_errors('responsibility_id') }}
+
+        <label for="calibration_interval">Calibration Interval</label>
+        <input type="number" id="calibration_interval" name="calibration_interval" value="{{ form.calibration_interval }}">
+        {{ field_errors('calibration_interval') }}
+
+        <label for="shipping_instructions">Shipping Instructions</label>
+        <textarea id="shipping_instructions" name="shipping_instructions">{{ form.shipping_instructions }}</textarea>
+        {{ field_errors('shipping_instructions') }}
+
+        <label for="billing_instructions">Billing Instructions</label>
+        <textarea id="billing_instructions" name="billing_instructions">{{ form.billing_instructions }}</textarea>
+        {{ field_errors('billing_instructions') }}
+    </fieldset>
 
     <button type="submit">Save</button>
 </form>

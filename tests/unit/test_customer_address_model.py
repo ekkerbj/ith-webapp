@@ -4,9 +4,7 @@ import pytest
 from ith_webapp.models.customer import Customer
 # CustomerAddress will be imported after implementation
 
-@pytest.mark.skip("CustomerAddress model not implemented yet")
 def test_customer_address_can_be_persisted_and_retrieved(session: Session):
-    # This test will fail until CustomerAddress model exists
     from ith_webapp.models.customer_address import CustomerAddress
     customer = Customer(customer_name="Acme Corp", card_code="C10001", active=True)
     session.add(customer)

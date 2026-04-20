@@ -21,3 +21,22 @@ def test_login_post_stores_firebase_user_session_and_redirects(client, app):
     assert "/customers/" in response.headers["Location"]
     with client.session_transaction() as session:
         assert session.get("firebase_user") is not None
+
+
+def test_readonly_user_cannot_open_customer_create_form(app):
+    app.config["AUTH_REQUIRED"] = True
+    app.config["FIREBASE_AUTH_CLIENT"] = lambda email, password: {
+        "email": email,
+        "idToken": "token-123",
+        "refreshToken": "refresh-123",
+        "role": "readonly",
+    }
+    client = app.test_client()
+    client.post(
+        "/login?next=/customers/",
+        data={"email": "user@example.com", "password": "secret"},
+    )
+
+    response = client.get("/customers/new")
+
+    assert response.status_code == 403

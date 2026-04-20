@@ -41,6 +41,58 @@ def test_build_service_invoice_pdf_includes_sections_and_avatax_variant(session:
     assert b"Sales Lines" in pdf_bytes
 
 
+def test_build_service_invoice_pdf_formats_brazil_currency(session: Session):
+    customer = Customer(customer_name="Acme")
+    session.add(customer)
+    session.flush()
+
+    service = Service(
+        customer_id=customer.customer_id,
+        cardcode="C123",
+        order_status="Invoiced",
+        sale_type="Repair",
+        technician="Tech1",
+        price=1234.56,
+        cost=50.0,
+        active=True,
+    )
+    session.add(service)
+    session.flush()
+
+    session.add(ServiceSub(service_id=service.service_id, item_type="F", quantity=1, price=1234.56, cost=80.0))
+    session.commit()
+
+    pdf_bytes = build_service_invoice_pdf(session, service.service_id, region="BR")
+
+    assert b"R$ 1.234,56" in pdf_bytes
+
+
+def test_build_service_invoice_pdf_formats_mexico_currency(session: Session):
+    customer = Customer(customer_name="Acme")
+    session.add(customer)
+    session.flush()
+
+    service = Service(
+        customer_id=customer.customer_id,
+        cardcode="C123",
+        order_status="Invoiced",
+        sale_type="Repair",
+        technician="Tech1",
+        price=1234.56,
+        cost=50.0,
+        active=True,
+    )
+    session.add(service)
+    session.flush()
+
+    session.add(ServiceSub(service_id=service.service_id, item_type="F", quantity=1, price=1234.56, cost=80.0))
+    session.commit()
+
+    pdf_bytes = build_service_invoice_pdf(session, service.service_id, region="MX")
+
+    assert b"MX$ 1,234.56" in pdf_bytes
+
+
 def test_service_invoice_report_route_returns_pdf(app):
     factory = app.config["SESSION_FACTORY"]
     session = factory()

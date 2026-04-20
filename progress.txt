@@ -1,4 +1,3 @@
-36. 2026-04-20: F-084 Report - Order Confirmation (PDF) implemented with order confirmation PDF route, tests, and ADR.
 37. 2026-04-20: F-085 Parts Sold and BOM Reports implemented with parts sold history, assembly BOM, and customer-specific parts list HTML/PDF routes, tests, and ADR.
 38. 2026-04-20: F-086 Regional Localization implemented with region-aware currency formatting for Brazil and Mexico quote/invoice PDFs, tests, and ADR.
 39. 2026-04-20: F-087 Customer-Specific Report Variants implemented with deterministic Alstom and Mortenson report titles, tests, and ADR.
