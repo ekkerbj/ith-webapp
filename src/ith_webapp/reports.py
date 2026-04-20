@@ -1362,6 +1362,16 @@ def _repair_time_analysis_rows(session) -> list[dict[str, object]]:
     ]
 
 
+def _open_order_rows(session, customer_id: int) -> tuple[Customer, list[object]]:
+    customer = session.get(Customer, customer_id)
+    if customer is None:
+        raise ValueError(f"Customer {customer_id} not found")
+    order_repository = current_app.config["SAP_ORDER_REPOSITORY"]
+    card_code = customer.card_code or ""
+    orders = order_repository.list_open_orders(card_code) if card_code else []
+    return customer, orders
+
+
 def _parse_audit_trail_date(value: str | None) -> date | None:
     if not value:
         return None
@@ -1538,6 +1548,34 @@ _REPAIR_TIME_ANALYSIS_TEMPLATE = """
     {% endfor %}
     {% else %}
     <tr><td colspan="6">(none)</td></tr>
+    {% endif %}
+  </tbody>
+</table>
+{% endblock %}
+"""
+
+_OPEN_ORDER_REPORT_TEMPLATE = """
+{% extends "base.html" %}
+{% block title %}Open Order Report - ITH{% endblock %}
+{% block content %}
+<h1>Open Order Report</h1>
+<p>Customer: {{ customer.customer_name or "" }}</p>
+<p>Card Code: {{ customer.card_code or "" }}</p>
+<table>
+  <thead>
+    <tr><th>Doc Entry</th><th>Order Number</th><th>Total</th></tr>
+  </thead>
+  <tbody>
+    {% if orders %}
+    {% for order in orders %}
+    <tr>
+      <td>{{ order.doc_entry }}</td>
+      <td>{{ order.doc_num }}</td>
+      <td>{{ order.total }}</td>
+    </tr>
+    {% endfor %}
+    {% else %}
+    <tr><td colspan="3">(none)</td></tr>
     {% endif %}
   </tbody>
 </table>
@@ -1914,6 +1952,19 @@ def customer_parts_list_pdf_report(customer_id: int):
             f'inline; filename="customer-parts-list-{customer_id}.pdf"'
         )
         return response
+    finally:
+        session.close()
+
+
+@bp.route("/open-order/<int:customer_id>")
+@bp.route("/open-order-report/<int:customer_id>")
+def open_order_report(customer_id: int):
+    session = _get_session()
+    try:
+        customer, orders = _open_order_rows(session, customer_id)
+        return render_template_string(
+            _OPEN_ORDER_REPORT_TEMPLATE, customer=customer, orders=orders
+        )
     finally:
         session.close()
 
