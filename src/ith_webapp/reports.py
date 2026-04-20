@@ -13,6 +13,7 @@ from ith_webapp.models import (
     CustomerApplicationSpecs,
     CustomerTools,
     ITHTestGauge,
+    FieldService,
     ServiceMeasurements,
     PackingList,
     PackingListSub,
@@ -21,6 +22,7 @@ from ith_webapp.models import (
     PartsSub,
     Service,
     ServiceSub,
+    ServiceTime,
     Unit,
 )
 
@@ -335,6 +337,126 @@ def _service_measurement_report_pages(
             )
         )
     return pages
+
+
+def _field_service_time_rows(session, customer_id: int) -> list[tuple[ServiceTime, Service]]:
+    return (
+        session.query(ServiceTime, Service)
+        .join(Service, Service.service_id == ServiceTime.service_id)
+        .filter(Service.customer_id == customer_id)
+        .order_by(ServiceTime.date, ServiceTime.id)
+        .all()
+    )
+
+
+def _field_service_decimal_total(rows, field_name: str) -> Decimal:
+    total = Decimal("0")
+    for row in rows:
+        value = getattr(row[0], field_name)
+        if value is not None:
+            total += Decimal(str(value))
+    return total
+
+
+def _field_service_lines(
+    field_service: FieldService,
+    title: str,
+    rows: list[tuple[ServiceTime, Service]],
+    customer_facing: bool = False,
+) -> list[str]:
+    customer_name = getattr(field_service.customer, "customer_name", "") or ""
+    status_name = getattr(field_service.field_service_status, "name", "") or ""
+    total_hours = _field_service_decimal_total(rows, "hours")
+    total_amount = Decimal("0")
+    for time_entry, _service in rows:
+        hours = Decimal(str(time_entry.hours))
+        rate = Decimal(str(time_entry.labor_rate))
+        total_amount += hours * rate
+
+    lines = [
+        title,
+        f"Customer: {customer_name}",
+        f"Status: {status_name}",
+        f"Visit Date: {field_service.visit_date.isoformat()}",
+        f"Notes: {field_service.visit_notes or ''}",
+        "",
+    ]
+    if "Summary" in title:
+        lines.extend(
+            [
+                "Summary",
+                f"Service Entries: {len(rows)}",
+                f"Total Hours: {total_hours:.2f}",
+                f"Total Labor: {total_amount:.2f}",
+            ]
+        )
+        return lines
+
+    lines.append("Time Entries")
+    if not rows:
+        lines.append("(none)")
+        return lines
+
+    for time_entry, service in rows:
+        hours = Decimal(str(time_entry.hours))
+        rate = Decimal(str(time_entry.labor_rate))
+        if customer_facing:
+            lines.append(
+                " - "
+                f"Service {service.service_id} | "
+                f"{time_entry.date} | "
+                f"Technician {time_entry.technician} | "
+                f"Hours {hours:.2f}"
+            )
+        else:
+            lines.append(
+                " - "
+                f"Service {service.service_id} | "
+                f"{time_entry.date} | "
+                f"Technician {time_entry.technician} | "
+                f"Hours {hours:.2f} | "
+                f"Rate {rate:.2f} | "
+                f"Amount {(hours * rate):.2f}"
+            )
+    lines.extend(
+        [
+            "",
+            f"Total Hours: {total_hours:.2f}",
+        ]
+    )
+    if not customer_facing:
+        lines.append(f"Total Labor: {total_amount:.2f}")
+    return lines
+
+
+def build_field_service_report_pdf(session, field_service_id: int) -> bytes:
+    field_service = session.get(FieldService, field_service_id)
+    if field_service is None:
+        raise ValueError(f"FieldService {field_service_id} not found")
+    rows = _field_service_time_rows(session, field_service.customer_id)
+    pages = _paginate(_field_service_lines(field_service, "Field Service Report", rows))
+    return _build_pdf(pages)
+
+
+def build_field_service_summary_pdf(session, field_service_id: int) -> bytes:
+    field_service = session.get(FieldService, field_service_id)
+    if field_service is None:
+        raise ValueError(f"FieldService {field_service_id} not found")
+    rows = _field_service_time_rows(session, field_service.customer_id)
+    pages = _paginate(_field_service_lines(field_service, "Field Service Summary", rows))
+    return _build_pdf(pages)
+
+
+def build_field_service_timesheet_pdf(
+    session, field_service_id: int, customer_facing: bool = False
+) -> bytes:
+    field_service = session.get(FieldService, field_service_id)
+    if field_service is None:
+        raise ValueError(f"FieldService {field_service_id} not found")
+    rows = _field_service_time_rows(session, field_service.customer_id)
+    title = "Customer-facing Timesheet" if customer_facing else "Timesheet"
+    pages = _paginate(_field_service_lines(field_service, title, rows, customer_facing))
+    return _build_pdf(pages)
 
 
 def _customer_detail_context(session, customer_id: int) -> dict[str, object]:
@@ -849,6 +971,51 @@ def service_measurements_report(service_id: int):
         response = Response(pdf_bytes, mimetype="application/pdf")
         response.headers["Content-Disposition"] = (
             f'inline; filename="service-measurements-{service_id}.pdf"'
+        )
+        return response
+    finally:
+        session.close()
+
+
+@bp.route("/field-service/<int:field_service_id>")
+def field_service_report(field_service_id: int):
+    session = _get_session()
+    try:
+        pdf_bytes = build_field_service_report_pdf(session, field_service_id)
+        response = Response(pdf_bytes, mimetype="application/pdf")
+        response.headers["Content-Disposition"] = (
+            f'inline; filename="field-service-report-{field_service_id}.pdf"'
+        )
+        return response
+    finally:
+        session.close()
+
+
+@bp.route("/field-service-summary/<int:field_service_id>")
+def field_service_summary_report(field_service_id: int):
+    session = _get_session()
+    try:
+        pdf_bytes = build_field_service_summary_pdf(session, field_service_id)
+        response = Response(pdf_bytes, mimetype="application/pdf")
+        response.headers["Content-Disposition"] = (
+            f'inline; filename="field-service-summary-{field_service_id}.pdf"'
+        )
+        return response
+    finally:
+        session.close()
+
+
+@bp.route("/field-service-timesheet/<int:field_service_id>")
+def field_service_timesheet_report(field_service_id: int):
+    session = _get_session()
+    try:
+        customer_facing = request.args.get("customer_facing") in {"1", "true", "yes"}
+        pdf_bytes = build_field_service_timesheet_pdf(
+            session, field_service_id, customer_facing=customer_facing
+        )
+        response = Response(pdf_bytes, mimetype="application/pdf")
+        response.headers["Content-Disposition"] = (
+            f'inline; filename="field-service-timesheet-{field_service_id}.pdf"'
         )
         return response
     finally:
