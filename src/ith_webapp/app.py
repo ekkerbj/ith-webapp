@@ -1,6 +1,8 @@
 from decimal import Decimal
+import json
+from urllib import error, request as urllib_request
 
-from flask import Flask, current_app, redirect, render_template_string, url_for
+from flask import Flask, current_app, redirect, render_template_string, request, session, url_for
 
 from ith_webapp.database import Base, create_session_factory
 
@@ -30,8 +32,32 @@ def _inventory_reorder_rows():
     return rows
 
 
+def _firebase_sign_in(api_key: str, email: str, password: str) -> dict[str, str]:
+    payload = json.dumps(
+        {"email": email, "password": password, "returnSecureToken": True}
+    ).encode("utf-8")
+    auth_url = (
+        "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword"
+        f"?key={api_key}"
+    )
+    req = urllib_request.Request(
+        auth_url,
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib_request.urlopen(req, timeout=10) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except error.HTTPError as exc:
+        detail = exc.read().decode("utf-8")
+        raise ValueError(detail or "Firebase authentication failed") from exc
+
+
 def create_app(testing: bool = False) -> Flask:
     app = Flask(__name__)
+    app.secret_key = app.config.get("SECRET_KEY") or "dev-only-secret-key"
+    app.config["AUTH_REQUIRED"] = not testing
 
     if testing:
         app.config["TESTING"] = True
@@ -48,6 +74,63 @@ def create_app(testing: bool = False) -> Flask:
     @app.route("/")
     def index():
         return redirect(url_for("customers.customer_list"))
+
+    @app.before_request
+    def require_authentication():
+        if not app.config.get("AUTH_REQUIRED", True):
+            return None
+        if request.endpoint in {"static", "login", "login_post", "logout"}:
+            return None
+        if session.get("firebase_user") is None:
+            next_url = request.full_path.rstrip("?")
+            return redirect(url_for("login", next=next_url))
+
+    @app.route("/login", methods=["GET"])
+    def login():
+        return render_template_string(
+            """
+            <!doctype html>
+            <html lang="en">
+            <head><title>Login</title></head>
+            <body>
+              <h1>Login</h1>
+              <form method="post">
+                <label>Email <input type="email" name="email"></label>
+                <label>Password <input type="password" name="password"></label>
+                <button type="submit">Sign in</button>
+              </form>
+            </body>
+            </html>
+            """
+        )
+
+    @app.route("/login", methods=["POST"])
+    def login_post():
+        email = request.form.get("email", "")
+        password = request.form.get("password", "")
+        auth_client = app.config.get("FIREBASE_AUTH_CLIENT")
+        if auth_client is None:
+            api_key = app.config.get("FIREBASE_API_KEY")
+            if not api_key:
+                raise RuntimeError("FIREBASE_API_KEY is required for login")
+            auth_client = lambda auth_email, auth_password: _firebase_sign_in(
+                api_key, auth_email, auth_password
+            )
+        payload = auth_client(email, password)
+        session["firebase_user"] = {
+            "email": payload["email"],
+            "id_token": payload.get("idToken"),
+            "refresh_token": payload.get("refreshToken"),
+            "local_id": payload.get("localId"),
+        }
+        session.permanent = True
+        next_url = request.args.get("next") or url_for("customers.customer_list")
+        return redirect(next_url)
+
+    @app.route("/logout", methods=["POST"])
+    def logout():
+        session.clear()
+        return redirect(url_for("login"))
 
     @app.route("/inventory/reorder")
     def inventory_reorder_dashboard():

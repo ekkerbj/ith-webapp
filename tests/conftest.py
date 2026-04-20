@@ -30,4 +30,21 @@ def app():
 
 @pytest.fixture
 def client(app) -> FlaskClient:
+    app.config["FIREBASE_AUTH_CLIENT"] = lambda email, password: {
+        "email": email,
+        "idToken": "test-id-token",
+        "refreshToken": "test-refresh-token",
+        "localId": "test-local-id",
+    }
+    client = app.test_client()
+    client.post(
+        "/login?next=/",
+        data={"email": "tester@example.com", "password": "password"},
+    )
+    return client
+
+
+@pytest.fixture
+def guest_client(app) -> FlaskClient:
+    app.config["AUTH_REQUIRED"] = True
     return app.test_client()
