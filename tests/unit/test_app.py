@@ -36,6 +36,42 @@ def test_login_page_uses_shared_layout_and_styles(client):
     assert "Login" in body
 
 
+def test_missing_route_renders_custom_404_page():
+    app = create_app(testing=True)
+    client = app.test_client()
+
+    response = client.get("/missing-page")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 404
+    assert "Page not found" in body
+    assert "Return to switchboard" in body
+
+
+def test_unhandled_exception_renders_custom_500_page_and_logs_context(caplog):
+    app = create_app(testing=True)
+
+    @app.route("/boom")
+    def boom():
+        raise RuntimeError("boom")
+
+    client = app.test_client()
+
+    with caplog.at_level("ERROR"):
+        response = client.get("/boom")
+
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 500
+    assert "Internal server error" in body
+
+    records = [record for record in caplog.records if record.getMessage() == "Unhandled application exception"]
+    assert len(records) == 1
+    assert records[0].request_method == "GET"
+    assert records[0].request_path == "/boom"
+    assert records[0].exception_type == "RuntimeError"
+
+
 def test_stylesheet_is_served_with_responsive_rules(client):
     response = client.get("/static/style.css")
     body = response.get_data(as_text=True)

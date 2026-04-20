@@ -4,6 +4,7 @@ import os
 from urllib import error, request as urllib_request
 
 from flask import Flask, abort, current_app, redirect, render_template_string, request, session, url_for
+from werkzeug.exceptions import HTTPException
 
 from ith_webapp.database import Base, create_session_factory
 
@@ -31,6 +32,39 @@ def _inventory_reorder_rows():
                 }
             )
     return rows
+
+
+ERROR_PAGE_TEMPLATE = """
+{% extends "base.html" %}
+{% block title %}{{ code }} - ITH{% endblock %}
+{% block content %}
+<section class="error-page error-page--{{ code }}">
+  <h1>{{ heading }}</h1>
+  <p>{{ message }}</p>
+  <p><a href="{{ url_for('index') }}">Return to switchboard</a></p>
+</section>
+{% endblock %}
+"""
+
+
+def _render_error_page(code: int, heading: str, message: str):
+    return render_template_string(
+        ERROR_PAGE_TEMPLATE,
+        code=code,
+        heading=heading,
+        message=message,
+    )
+
+
+def _log_unhandled_exception(exc: Exception) -> None:
+    current_app.logger.exception(
+        "Unhandled application exception",
+        extra={
+            "request_method": request.method,
+            "request_path": request.path,
+            "exception_type": exc.__class__.__name__,
+        },
+    )
 
 
 def _firebase_sign_in(api_key: str, email: str, password: str) -> dict[str, str]:
@@ -305,6 +339,31 @@ def create_app(testing: bool = False) -> Flask:
             </html>
             """,
             rows=rows,
+        )
+
+    @app.errorhandler(404)
+    def not_found(_error):
+        return (
+            _render_error_page(
+                404,
+                "Page not found",
+                "The page you requested could not be found.",
+            ),
+            404,
+        )
+
+    @app.errorhandler(Exception)
+    def internal_server_error(exc):
+        if isinstance(exc, HTTPException):
+            return exc
+        _log_unhandled_exception(exc)
+        return (
+            _render_error_page(
+                500,
+                "Internal server error",
+                "Something went wrong while processing your request.",
+            ),
+            500,
         )
 
     from ith_webapp.views.customers import bp as customers_bp
