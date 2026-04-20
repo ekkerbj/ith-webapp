@@ -1,6 +1,33 @@
-from flask import Flask, redirect, url_for
+from decimal import Decimal
+
+from flask import Flask, current_app, redirect, render_template_string, url_for
 
 from ith_webapp.database import Base, create_session_factory
+
+
+def _calculate_reorder_quantity(stock) -> Decimal:
+    return stock.min_stock - stock.on_hand + stock.committed - stock.on_order
+
+
+def _inventory_reorder_rows():
+    repository = current_app.config["INVENTORY_REORDER_REPOSITORY"]
+    warehouse_code = current_app.config["INVENTORY_REORDER_WAREHOUSE_CODE"]
+    item_codes = current_app.config.get("INVENTORY_REORDER_ITEM_CODES", [])
+
+    rows = []
+    for item_code in item_codes:
+        stock = repository.get_stock(item_code, warehouse_code)
+        if stock is None:
+            continue
+        reorder_quantity = _calculate_reorder_quantity(stock)
+        if reorder_quantity > 0:
+            rows.append(
+                {
+                    "item_code": stock.item_code,
+                    "reorder_quantity": reorder_quantity,
+                }
+            )
+    return rows
 
 
 def create_app(testing: bool = False) -> Flask:
@@ -21,6 +48,32 @@ def create_app(testing: bool = False) -> Flask:
     @app.route("/")
     def index():
         return redirect(url_for("customers.customer_list"))
+
+    @app.route("/inventory/reorder")
+    def inventory_reorder_dashboard():
+        rows = _inventory_reorder_rows()
+        return render_template_string(
+            """
+            <!doctype html>
+            <html lang="en">
+            <head><title>Inventory Reorder Dashboard</title></head>
+            <body>
+              <h1>Inventory Reorder Dashboard</h1>
+              <table>
+                <thead>
+                  <tr><th>Item</th><th>Reorder Quantity</th></tr>
+                </thead>
+                <tbody>
+                  {% for row in rows %}
+                    <tr><td>{{ row.item_code }}</td><td>{{ row.reorder_quantity }}</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </body>
+            </html>
+            """,
+            rows=rows,
+        )
 
     from ith_webapp.views.customers import bp as customers_bp
 
