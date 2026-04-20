@@ -1,6 +1,3 @@
-
-17. 2026-04-19: F-031 Rental Tracking implemented with rental_status lookup, CRUD views, migration, tests, and ADR.
-18. 2026-04-19: F-032 Projects implemented with model, migration, CRUD views, tests, and ADR.
 19. 2026-04-19: F-033 Order Confirmation implemented with model, migration, CRUD views, tests, and ADR.
 20. 2026-04-19: F-034 ITH Test Gauge Tracking implemented with gauge/type models, migration, CRUD views, tests, and ADR.
 21. 2026-04-19: F-035 Wind and Gas Turbine Site Tracking implemented with site/lead models, generic CRUD views, migration, tests, and ADR.
@@ -15,3 +12,5 @@
 2026-04-19: F-044 CSS Styling and Responsive Layout implemented with shared login shell, vanilla responsive stylesheet, tests, and ADR.
 
 2026-04-19: F-045 Service Multi Quote PDF implemented with in-repo PDF generation, report route, tests, and ADR.
+2026-04-19: F-046 Basic Quote PDF implemented with BOM sections, static quote pages, report route, tests, and ADR.
+2026-04-19: F-047 Service Invoice PDF implemented with invoice sections, Avatax variant support, report route, tests, and ADR.
