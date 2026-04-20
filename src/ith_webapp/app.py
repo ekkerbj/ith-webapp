@@ -2,7 +2,7 @@ from decimal import Decimal
 import json
 from urllib import error, request as urllib_request
 
-from flask import Flask, current_app, redirect, render_template_string, request, session, url_for
+from flask import Flask, abort, current_app, redirect, render_template_string, request, session, url_for
 
 from ith_webapp.database import Base, create_session_factory
 
@@ -54,6 +54,77 @@ def _firebase_sign_in(api_key: str, email: str, password: str) -> dict[str, str]
         raise ValueError(detail or "Firebase authentication failed") from exc
 
 
+SALES_BLUEPRINTS = {"customers", "consignment_list", "order_confirmations", "parts", "projects"}
+TECHNICIAN_BLUEPRINTS = {
+    "field_services",
+    "ith_test_gauges",
+    "rentals",
+    "sites_gas_turbines",
+    "sites_wind_gas",
+    "sites_wind_turbines",
+    "wind_turbine_leads",
+    "wind_turbine_leads_details",
+}
+
+
+def _resolve_role(payload: dict[str, object], default_role: str = "admin") -> str:
+    custom_claims = payload.get("customClaims")
+    if isinstance(custom_claims, dict):
+        role = custom_claims.get("role")
+        if isinstance(role, str) and role:
+            return role
+    role = payload.get("role")
+    if isinstance(role, str) and role:
+        return role
+    return default_role
+
+
+def _current_role() -> str:
+    user = session.get("firebase_user") or {}
+    role = user.get("role") if isinstance(user, dict) else None
+    return role if isinstance(role, str) and role else "admin"
+
+
+def _is_mutating_view() -> bool:
+    return request.method != "GET" or request.path.endswith(("/new", "/edit", "/delete"))
+
+
+def _endpoint_blueprint(endpoint: str | None) -> str | None:
+    if endpoint is None:
+        return None
+    return endpoint.split(".", 1)[0]
+
+
+def _authorize_request() -> None:
+    endpoint = request.endpoint
+    if endpoint in {"static", "login", "login_post", "logout"}:
+        return
+
+    role = _current_role()
+    if role == "admin":
+        return
+
+    if endpoint is not None and endpoint.startswith("audit_trail."):
+        abort(403)
+
+    if not _is_mutating_view():
+        return
+
+    blueprint = _endpoint_blueprint(endpoint)
+    if blueprint in SALES_BLUEPRINTS:
+        if role != "sales":
+            abort(403)
+        return
+
+    if blueprint in TECHNICIAN_BLUEPRINTS:
+        if role != "technician":
+            abort(403)
+        return
+
+    if role == "readonly":
+        abort(403)
+
+
 def create_app(testing: bool = False) -> Flask:
     app = Flask(__name__)
     app.secret_key = app.config.get("SECRET_KEY") or "dev-only-secret-key"
@@ -73,7 +144,68 @@ def create_app(testing: bool = False) -> Flask:
 
     @app.route("/")
     def index():
-        return redirect(url_for("customers.customer_list"))
+        sections = [
+            ("Customers", [("Customer List", "customers.customer_list")]),
+            ("Check In", [("Check In workflow coming soon", None)]),
+            (
+                "Services",
+                [
+                    ("Projects", "projects.project_list"),
+                    ("Order Confirmations", "order_confirmations.order_confirmation_list"),
+                ],
+            ),
+            (
+                "Packing Lists",
+                [
+                    ("Consignment Lists", "consignment_list.consignment_list"),
+                    ("Ready to Produce", "packing_list_workflow.ready_to_produce"),
+                    ("Ready to Ship", "packing_list_workflow.ready_to_ship"),
+                ],
+            ),
+            ("Parts", [("Parts detail pages coming soon", None)]),
+            (
+                "Field Service",
+                [
+                    ("Field Services", "field_services.field_service_list"),
+                    ("Gas Turbines", "sites_gas_turbines.list"),
+                    ("Wind Turbines", "sites_wind_turbines.list"),
+                    ("Wind Gas Sites", "sites_wind_gas.list"),
+                    ("Wind Leads", "wind_turbine_leads.list"),
+                    ("Lead Details", "wind_turbine_leads_details.list"),
+                ],
+            ),
+            (
+                "Reports",
+                [("Inventory Reorder Dashboard", "inventory_reorder_dashboard"), ("Audit Trail", None)],
+            ),
+            ("Admin", [("Login/logout and access controls", None)]),
+        ]
+        return render_template_string(
+            """
+            {% extends "base.html" %}
+            {% block title %}Switchboard - ITH{% endblock %}
+            {% block content %}
+            <h1>Switchboard</h1>
+            {% for heading, links in sections %}
+            <section>
+              <h2>{{ heading }}</h2>
+              <ul>
+                {% for label, endpoint in links %}
+                <li>
+                  {% if endpoint %}
+                  <a href="{{ url_for(endpoint) }}">{{ label }}</a>
+                  {% else %}
+                  {{ label }}
+                  {% endif %}
+                </li>
+                {% endfor %}
+              </ul>
+            </section>
+            {% endfor %}
+            {% endblock %}
+            """,
+            sections=sections,
+        )
 
     @app.before_request
     def require_authentication():
@@ -84,6 +216,7 @@ def create_app(testing: bool = False) -> Flask:
         if session.get("firebase_user") is None:
             next_url = request.full_path.rstrip("?")
             return redirect(url_for("login", next=next_url))
+        _authorize_request()
 
     @app.route("/login", methods=["GET"])
     def login():
@@ -122,6 +255,7 @@ def create_app(testing: bool = False) -> Flask:
             "id_token": payload.get("idToken"),
             "refresh_token": payload.get("refreshToken"),
             "local_id": payload.get("localId"),
+            "role": _resolve_role(payload),
         }
         session.permanent = True
         next_url = request.args.get("next") or url_for("customers.customer_list")

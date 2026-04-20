@@ -10,11 +10,20 @@ def test_create_app_returns_flask_instance():
     assert isinstance(app, Flask)
 
 
-def test_index_redirects_to_customers(client):
+def test_index_renders_switchboard(client):
     response = client.get("/")
+    body = response.get_data(as_text=True)
 
-    assert response.status_code == 302
-    assert "/customers" in response.headers["Location"]
+    assert response.status_code == 200
+    assert "Switchboard" in body
+    assert "Customers" in body
+    assert "Check In" in body
+    assert "Services" in body
+    assert "Packing Lists" in body
+    assert "Parts" in body
+    assert "Field Service" in body
+    assert "Reports" in body
+    assert "Admin" in body
 
 
 def test_default_startup_creates_tables(tmp_path):
