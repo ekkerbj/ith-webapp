@@ -7,6 +7,8 @@ from flask import Blueprint, Response, current_app, request
 from ith_webapp.models import (
     CheckIn,
     CheckInSub,
+    ITHTestGauge,
+    ServiceMeasurements,
     PackingList,
     PackingListSub,
     Part,
@@ -244,6 +246,91 @@ def _check_in_lines(check_in: CheckIn, subs: list[CheckInSub]) -> list[str]:
     return lines
 
 
+def _certificate_variant_label(variant: str | None) -> str:
+    if variant and variant.lower() == "iso17025":
+        return "ISO 17025"
+    return "Standard"
+
+
+def _ith_test_gauge_certificate_lines(
+    gauge: ITHTestGauge, certificate_title: str, variant: str | None
+) -> list[str]:
+    return [
+        certificate_title,
+        f"Variant: {_certificate_variant_label(variant)}",
+        f"Gauge Name: {gauge.name or ''}",
+        f"Serial Number: {gauge.serial_number}",
+        f"Type: {getattr(gauge.ith_test_gauge_type, 'name', '') or ''}",
+        f"Calibration Due: {gauge.calibration_due_date or ''}",
+        f"Certification Due: {gauge.certification_due_date or ''}",
+        "",
+        "Certificate Statement",
+        "This document certifies the gauge for the stated test type.",
+    ]
+
+
+def _measurement_display_value(value) -> str:
+    if isinstance(value, bool):
+        return "Yes" if value else "No"
+    return _format_money(value) if value is not None else ""
+
+
+def _service_measurement_lines(
+    service: Service,
+    measurement: ServiceMeasurements,
+    title: str,
+    tool_name: str,
+    label: str,
+    value,
+) -> list[str]:
+    lines = [
+        title,
+        f"Tool Type: {tool_name}",
+        f"Customer: {getattr(service.customer, 'customer_name', '') or ''}",
+        f"Card Code: {service.cardcode or ''}",
+        f"Service ID: {service.service_id}",
+        "",
+        label,
+        f"Value: {_measurement_display_value(value)}",
+    ]
+    if title.endswith("Test Report"):
+        lines.extend(
+            [
+                "",
+                "Test Result",
+                f"Pass/Fail: {_measurement_display_value(measurement.btc_passed)}",
+            ]
+        )
+    return lines
+
+
+def _service_measurement_report_pages(
+    service: Service, measurement: ServiceMeasurements
+) -> list[list[str]]:
+    specs = [
+        ("BTC", "btc_passed", "Pass/Fail"),
+        ("Gauge", "gauge_value", "Gauge Value"),
+        ("Hose", "hose_pressure", "Hose Pressure"),
+        ("Nut Runner", "nut_runner_torque", "Nut Runner Torque"),
+        ("Pump", "pump_output", "Pump Output"),
+        ("Torque Wrench", "torque_wrench_setting", "Torque Wrench Setting"),
+    ]
+    pages: list[list[str]] = []
+    for tool_name, field_name, label in specs:
+        value = getattr(measurement, field_name)
+        pages.append(
+            _service_measurement_lines(
+                service, measurement, f"{tool_name} Measurement Form", tool_name, label, value
+            )
+        )
+        pages.append(
+            _service_measurement_lines(
+                service, measurement, f"{tool_name} Test Report", tool_name, label, value
+            )
+        )
+    return pages
+
+
 def _paginate(lines: list[str], lines_per_page: int = 24) -> list[list[str]]:
     pages: list[list[str]] = []
     current: list[str] = []
@@ -411,6 +498,39 @@ def build_check_in_pdf(session, check_in_id: int) -> bytes:
     return _build_pdf(pages)
 
 
+def build_ith_test_gauge_certificates_pdf(
+    session, ith_test_gauge_id: int, variant: str | None = None
+) -> bytes:
+    gauge = session.get(ITHTestGauge, ith_test_gauge_id)
+    if gauge is None:
+        raise ValueError(f"ITHTestGauge {ith_test_gauge_id} not found")
+    pages = [
+        _ith_test_gauge_certificate_lines(gauge, title, variant)
+        for title in (
+            "Gauge Calibration Certificate",
+            "Force Test Certificate",
+            "Torque Test Certificate",
+        )
+    ]
+    return _build_pdf(pages)
+
+
+def build_service_measurements_pdf(session, service_id: int) -> bytes:
+    service = session.get(Service, service_id)
+    if service is None:
+        raise ValueError(f"Service {service_id} not found")
+    measurement = (
+        session.query(ServiceMeasurements)
+        .filter(ServiceMeasurements.service_id == service_id)
+        .order_by(ServiceMeasurements.id)
+        .first()
+    )
+    if measurement is None:
+        raise ValueError(f"ServiceMeasurements for service {service_id} not found")
+    pages = _service_measurement_report_pages(service, measurement)
+    return _build_pdf(pages)
+
+
 @bp.route("/service-multi-quote/<int:service_id>")
 def service_multi_quote_report(service_id: int):
     session = _get_session()
@@ -496,6 +616,36 @@ def check_in_report(check_in_id: int):
         response = Response(pdf_bytes, mimetype="application/pdf")
         response.headers["Content-Disposition"] = (
             f'inline; filename="check-in-{check_in_id}.pdf"'
+        )
+        return response
+    finally:
+        session.close()
+
+
+@bp.route("/ith-test-gauge-certificates/<int:ith_test_gauge_id>")
+def ith_test_gauge_certificates_report(ith_test_gauge_id: int):
+    session = _get_session()
+    try:
+        pdf_bytes = build_ith_test_gauge_certificates_pdf(
+            session, ith_test_gauge_id, request.args.get("variant")
+        )
+        response = Response(pdf_bytes, mimetype="application/pdf")
+        response.headers["Content-Disposition"] = (
+            f'inline; filename="ith-test-gauge-certificates-{ith_test_gauge_id}.pdf"'
+        )
+        return response
+    finally:
+        session.close()
+
+
+@bp.route("/service-measurements/<int:service_id>")
+def service_measurements_report(service_id: int):
+    session = _get_session()
+    try:
+        pdf_bytes = build_service_measurements_pdf(session, service_id)
+        response = Response(pdf_bytes, mimetype="application/pdf")
+        response.headers["Content-Disposition"] = (
+            f'inline; filename="service-measurements-{service_id}.pdf"'
         )
         return response
     finally:
