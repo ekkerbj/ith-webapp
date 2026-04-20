@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from barcode import get_barcode_class
 from barcode.writer import SVGWriter
+from pdf417gen import encode, render_svg
+from xml.etree import ElementTree
 
 _BARCODE_CLASS_NAMES = {
     "code128": "code128",
@@ -40,3 +42,9 @@ def generate_upca_svg(value: str) -> bytes:
 
 def generate_ean13_svg(value: str) -> bytes:
     return generate_barcode_svg("ean13", value)
+
+
+def generate_pdf417_svg(value: str) -> bytes:
+    svg = render_svg(encode(value))
+    root = svg.getroot() if hasattr(svg, "getroot") else svg
+    return ElementTree.tostring(root, encoding="utf-8", xml_declaration=True)
