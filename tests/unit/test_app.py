@@ -26,6 +26,25 @@ def test_index_renders_switchboard(client):
     assert "Admin" in body
 
 
+def test_login_page_uses_shared_layout_and_styles(client):
+    response = client.get("/login?next=/")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert 'href="/static/style.css"' in body
+    assert "<main>" in body
+    assert "Login" in body
+
+
+def test_stylesheet_is_served_with_responsive_rules(client):
+    response = client.get("/static/style.css")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "@media" in body
+    assert "max-width" in body
+
+
 def test_default_startup_creates_tables(tmp_path):
     db_path = tmp_path / "test.db"
     app = create_app()
@@ -39,3 +58,27 @@ def test_default_startup_creates_tables(tmp_path):
     session.close()
 
     assert "customer" in table_names
+
+
+def test_create_app_uses_database_url_environment_variable(monkeypatch):
+    captured = {}
+
+    def fake_create_session_factory(database_url="sqlite:///:memory:"):
+        captured["database_url"] = database_url
+
+        class FakeSession:
+            def get_bind(self):
+                return object()
+
+        return lambda: FakeSession()
+
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        "postgresql+psycopg://user:pass@db.example.com/ith",
+    )
+    monkeypatch.setattr("ith_webapp.app.create_session_factory", fake_create_session_factory)
+    monkeypatch.setattr("ith_webapp.app.Base.metadata.create_all", lambda bind: None)
+
+    create_app()
+
+    assert captured["database_url"] == "postgresql+psycopg://user:pass@db.example.com/ith"

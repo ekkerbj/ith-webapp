@@ -1,5 +1,6 @@
 from decimal import Decimal
 import json
+import os
 from urllib import error, request as urllib_request
 
 from flask import Flask, abort, current_app, redirect, render_template_string, request, session, url_for
@@ -141,11 +142,13 @@ def create_app(testing: bool = False) -> Flask:
     if testing:
         app.config["TESTING"] = True
         app.config["DATABASE_URL"] = "sqlite:///:memory:"
+    else:
+        app.config.setdefault("DATABASE_URL", os.getenv("DATABASE_URL", "sqlite:///ith.db"))
 
     if "SESSION_FACTORY" not in app.config:
         import ith_webapp.models  # noqa: F401 — register models with Base
 
-        database_url = app.config.get("DATABASE_URL", "sqlite:///ith.db")
+        database_url = app.config["DATABASE_URL"]
         factory = create_session_factory(database_url)
         Base.metadata.create_all(factory().get_bind())
         app.config["SESSION_FACTORY"] = factory
