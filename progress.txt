@@ -1,4 +1,3 @@
-2026-04-19: ServiceFlag and ServiceFlagAssignment models, migration, and tests implemented and verified for F-018.
 2026-04-19: F-019 Service Follow-Up Chain workflow implemented, tested, and prd.json updated.
 F-021 Service Sub Copy (Quote Snapshots) passes: true
 2026-04-19: Packing List Workflow stub routes implemented and tested for F-024.
@@ -14,3 +13,4 @@ F-026: Implemented PartsList and PartsSub models with tests. All tests pass.
 20. 2026-04-19: F-034 ITH Test Gauge Tracking implemented with gauge/type models, migration, CRUD views, tests, and ADR.
 21. 2026-04-19: F-035 Wind and Gas Turbine Site Tracking implemented with site/lead models, generic CRUD views, migration, tests, and ADR.
 2026-04-19: F-036 Audit Trail implemented with tblaudittrail model, service, customer hooks, audit history view, migration, and tests.
+2026-04-19: F-037 Null Safety Utilities implemented with Nnz/Zero helpers, unit tests, ADR, and prd.json updated.
