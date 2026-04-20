@@ -1,3 +1,5 @@
+from datetime import date, datetime, timezone
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -82,6 +84,56 @@ def test_field_service_list_filters_by_customer_status_or_id():
     html = response.get_data(as_text=True)
     assert "Beta Inc" in html
     assert "Acme Corp" not in html
+
+
+def test_field_service_list_limits_results_to_the_current_month():
+    app = create_app(testing=True)
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(bind=engine)
+
+    session = factory()
+    current_customer = Customer(customer_name="Current Month", card_code="C30001", active=True)
+    previous_customer = Customer(customer_name="Previous Month", card_code="C30002", active=True)
+    current_status = FieldServiceStatus(name="Open")
+    previous_status = FieldServiceStatus(name="Closed")
+    session.add_all([current_customer, previous_customer, current_status, previous_status])
+    session.commit()
+
+    today = date.today()
+    current_visit_date = datetime(today.year, today.month, 15, tzinfo=timezone.utc)
+    previous_month = today.month - 1 or 12
+    previous_year = today.year if today.month > 1 else today.year - 1
+    previous_visit_date = datetime(previous_year, previous_month, 15, tzinfo=timezone.utc)
+
+    session.add(
+        FieldService(
+            customer_id=current_customer.customer_id,
+            field_service_status_id=current_status.field_service_status_id,
+            visit_notes="Current month visit",
+            visit_date=current_visit_date,
+        )
+    )
+    session.add(
+        FieldService(
+            customer_id=previous_customer.customer_id,
+            field_service_status_id=previous_status.field_service_status_id,
+            visit_notes="Previous month visit",
+            visit_date=previous_visit_date,
+        )
+    )
+    session.commit()
+    session.close()
+
+    app.config["SESSION_FACTORY"] = factory
+    client = app.test_client()
+
+    response = client.get("/field-services/")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Current Month" in html
+    assert "Previous Month" not in html
 
 
 def test_field_service_detail_renders_fields():

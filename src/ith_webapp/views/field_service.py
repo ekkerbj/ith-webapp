@@ -5,6 +5,7 @@ from flask import Blueprint, current_app, redirect, render_template, request, ur
 from ith_webapp.models.customer import Customer
 from ith_webapp.models.field_service import FieldService
 from ith_webapp.models.field_service_status import FieldServiceStatus
+from ith_webapp.services.date_filtering import current_month_filter
 from ith_webapp.services.pagination import paginate_query
 
 bp = Blueprint("field_services", __name__, url_prefix="/field-services")
@@ -23,6 +24,7 @@ def field_service_list():
             session.query(FieldService)
             .join(FieldService.customer)
             .join(FieldService.field_service_status)
+            .filter(current_month_filter(FieldService.visit_date))
         )
         query = (request.args.get("q") or "").strip()
         if query:

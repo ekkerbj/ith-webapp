@@ -1,6 +1,7 @@
 from flask import Blueprint, current_app, redirect, render_template, render_template_string, request, url_for
 
 from ith_webapp.models.rental import Rental
+from ith_webapp.services.date_filtering import current_month_filter
 from ith_webapp.services.pagination import paginate_query
 
 bp = Blueprint("demo_contracts", __name__, url_prefix="/demo-contracts")
@@ -84,7 +85,9 @@ def demo_contract_list():
     session = _get_session()
     try:
         items, pagination = paginate_query(
-            session.query(Rental).order_by(Rental.rental_id),
+            session.query(Rental)
+            .filter(current_month_filter(Rental.rental_date))
+            .order_by(Rental.rental_id),
             "demo_contracts.demo_contract_list",
             request.args,
             request.args.get("page", 1, type=int),
