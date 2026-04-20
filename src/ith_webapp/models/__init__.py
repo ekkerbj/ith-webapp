@@ -25,8 +25,15 @@ from ith_webapp.models.parts_list import PartsList, PartsSub  # noqa: F401
 from ith_webapp.models.parts_sold import PartsSold  # noqa: F401
 from ith_webapp.models.rental import Rental  # noqa: F401
 from ith_webapp.models.rental_status import RentalStatus  # noqa: F401
+from ith_webapp.models.ith_test_gauge import ITHTestGauge  # noqa: F401
+from ith_webapp.models.ith_test_gauge_type import ITHTestGaugeType  # noqa: F401
 from ith_webapp.models.project import Project  # noqa: F401
 from ith_webapp.models.order_confirmation import OrderConfirmation  # noqa: F401
+from ith_webapp.models.site_gas_turbine import SiteGasTurbine  # noqa: F401
+from ith_webapp.models.site_wind_turbine import SiteWindTurbine  # noqa: F401
+from ith_webapp.models.site_wind_gas import SiteWindGas  # noqa: F401
+from ith_webapp.models.wind_turbine_lead import WindTurbineLead  # noqa: F401
+from ith_webapp.models.wind_turbine_lead_detail import WindTurbineLeadDetail  # noqa: F401
 
 __all__ = [
     "Customer",
@@ -53,6 +60,13 @@ __all__ = [
     "PartsSold",
     "Rental",
     "RentalStatus",
+    "ITHTestGauge",
+    "ITHTestGaugeType",
     "Project",
     "OrderConfirmation",
+    "SiteGasTurbine",
+    "SiteWindTurbine",
+    "SiteWindGas",
+    "WindTurbineLead",
+    "WindTurbineLeadDetail",
 ]

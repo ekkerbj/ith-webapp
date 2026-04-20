@@ -44,8 +44,24 @@ def create_app(testing: bool = False) -> Flask:
     from ith_webapp.views.order_confirmations import bp as order_confirmations_bp
     app.register_blueprint(order_confirmations_bp)
 
+    from ith_webapp.views.ith_test_gauges import bp as ith_test_gauges_bp
+    app.register_blueprint(ith_test_gauges_bp)
+
     # Register Packing List Workflow blueprint
     from ith_webapp.views.packing_list_workflow import bp as packing_list_workflow_bp
     app.register_blueprint(packing_list_workflow_bp)
+
+    from ith_webapp.views.wind_turbine_tracking import (
+        site_gas_turbines_bp,
+        site_wind_gas_bp,
+        site_wind_turbines_bp,
+        wind_turbine_lead_details_bp,
+        wind_turbine_leads_bp,
+    )
+    app.register_blueprint(site_gas_turbines_bp)
+    app.register_blueprint(site_wind_turbines_bp)
+    app.register_blueprint(site_wind_gas_bp)
+    app.register_blueprint(wind_turbine_leads_bp)
+    app.register_blueprint(wind_turbine_lead_details_bp)
 
     return app

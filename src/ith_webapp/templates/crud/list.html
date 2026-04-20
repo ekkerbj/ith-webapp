@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - ITH{% endblock %}
+
+{% block content %}
+<h1>{{ heading }}</h1>
+{% if rows %}
+<table>
+    <thead>
+        <tr>
+            {% for header in headers %}
+            <th>{{ header }}</th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in rows %}
+        <tr>
+            {% for value in row["values"] %}
+            {% if loop.first %}
+            <td><a href="{{ row['url'] }}">{{ value }}</a></td>
+            {% else %}
+            <td>{{ value }}</td>
+            {% endif %}
+            {% endfor %}
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No records found.</p>
+{% endif %}
+{% endblock %}

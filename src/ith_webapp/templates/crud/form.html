@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - ITH{% endblock %}
+
+{% block content %}
+<h1>{{ heading }}</h1>
+
+<form method="post">
+    {% for label, name, field_type, required, value in fields %}
+    <label for="{{ name }}">{{ label }}</label>
+    <input
+        type="{{ field_type }}"
+        id="{{ name }}"
+        name="{{ name }}"
+        value="{{ value or '' }}"
+        {% if required %}required{% endif %}
+    >
+    {% endfor %}
+    <button type="submit">Save</button>
+</form>
+
+<a href="{{ list_url }}">Back to list</a>
+{% endblock %}
