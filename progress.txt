@@ -1,4 +1,3 @@
-14. 2026-04-19: F-062 Customer-Specific Barcode Labels implemented with CAT and ZF packing list label routes, barcode SVG, tests, and ADR.
 15. 2026-04-19: F-063 Customer Mailing and Address Labels implemented with mailing/address/SAP label routes, tests, and ADR.
 16. 2026-04-19: F-064 Demo Contract implemented with demo-contract rental alias routes, PDF report, tests, and ADR.
 17. 2026-04-20: F-065 Warranty Claims implemented with linked quote CRUD, report routes, tests, migration, and ADR.
@@ -14,3 +13,4 @@
 27. 2026-04-20: F-075 Audit Trail / Change Log implemented with filterable HTML report, user tracking, tests, migration, and ADR.
 28. 2026-04-20: F-076 Firebase Hosting and Cloud Run deployment implemented with Dockerfile, Cloud Run WSGI entrypoint, Firebase Hosting rewrites, Cloud Build config, tests, and ADR.
 29. 2026-04-20: F-077 Production PostgreSQL Configuration implemented with env-driven DATABASE_URL, PostgreSQL pooling, Alembic production URL support, tests, and ADR.
+30. 2026-04-20: F-078 Data Migration from Access to PostgreSQL implemented with Access row normalization, replication-column exclusion, dependency-ordered table loading, tests, and ADR.
