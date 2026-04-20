@@ -1646,7 +1646,9 @@ def _build_pdf(pages: list[list[str]]) -> bytes:
     return b"".join(parts)
 
 
-def build_service_multi_quote_pdf(session, service_id: int, region: str | None = None) -> bytes:
+def _service_multi_quote_pages(
+    session, service_id: int, region: str | None = None
+) -> list[list[str]]:
     service = session.get(Service, service_id)
     if service is None:
         raise ValueError(f"Service {service_id} not found")
@@ -1656,8 +1658,24 @@ def build_service_multi_quote_pdf(session, service_id: int, region: str | None =
         .order_by(ServiceSub.id)
         .all()
     )
-    pages = _paginate(_report_lines(service, subs, region))
-    return _build_pdf(pages)
+    return _paginate(_report_lines(service, subs, region))
+
+
+def build_service_multi_quote_pdf(session, service_id: int, region: str | None = None) -> bytes:
+    return _build_pdf(_service_multi_quote_pages(session, service_id, region))
+
+
+def _ith_test_gauge_certificate_pages(
+    gauge: ITHTestGauge, variant: str | None
+) -> list[list[str]]:
+    return [
+        _ith_test_gauge_certificate_lines(gauge, title, variant)
+        for title in (
+            "Gauge Calibration Certificate",
+            "Force Test Certificate",
+            "Torque Test Certificate",
+        )
+    ]
 
 
 def build_service_invoice_pdf(
@@ -1807,15 +1825,7 @@ def build_ith_test_gauge_certificates_pdf(
     gauge = session.get(ITHTestGauge, ith_test_gauge_id)
     if gauge is None:
         raise ValueError(f"ITHTestGauge {ith_test_gauge_id} not found")
-    pages = [
-        _ith_test_gauge_certificate_lines(gauge, title, variant)
-        for title in (
-            "Gauge Calibration Certificate",
-            "Force Test Certificate",
-            "Torque Test Certificate",
-        )
-    ]
-    return _build_pdf(pages)
+    return _build_pdf(_ith_test_gauge_certificate_pages(gauge, variant))
 
 
 def build_service_measurements_pdf(session, service_id: int) -> bytes:
@@ -1831,6 +1841,59 @@ def build_service_measurements_pdf(session, service_id: int) -> bytes:
     if measurement is None:
         raise ValueError(f"ServiceMeasurements for service {service_id} not found")
     pages = _service_measurement_report_pages(service, measurement)
+    return _build_pdf(pages)
+
+
+def _service_packet_cover_lines(
+    service: Service,
+    region: str | None,
+    gauge: ITHTestGauge | None = None,
+    variant: str | None = None,
+) -> list[str]:
+    customer_name = getattr(service.customer, "customer_name", "") or ""
+    lines = [
+        "Service Packet",
+        f"Variant: {_variant_label(region)}",
+        f"Customer: {customer_name}",
+        f"Card Code: {service.cardcode or ''}",
+        f"Service ID: {service.service_id}",
+    ]
+    if gauge is not None:
+        lines.extend(
+            [
+                f"Gauge: {gauge.name or ''}",
+                f"Gauge Serial Number: {gauge.serial_number}",
+                f"Certificate Variant: {_certificate_variant_label(variant)}",
+            ]
+        )
+    return lines
+
+
+def build_service_packet_pdf(
+    session,
+    service_id: int,
+    region: str | None = None,
+    variant: str | None = None,
+    ith_test_gauge_id: int | None = None,
+) -> bytes:
+    service = session.get(Service, service_id)
+    if service is None:
+        raise ValueError(f"Service {service_id} not found")
+    pages = [_service_packet_cover_lines(service, region)]
+    pages.extend(_service_multi_quote_pages(session, service_id, region))
+    measurement = (
+        session.query(ServiceMeasurements)
+        .filter(ServiceMeasurements.service_id == service_id)
+        .order_by(ServiceMeasurements.id)
+        .first()
+    )
+    if measurement is not None:
+        pages.extend(_service_measurement_report_pages(service, measurement))
+    if ith_test_gauge_id is not None:
+        gauge = session.get(ITHTestGauge, ith_test_gauge_id)
+        if gauge is None:
+            raise ValueError(f"ITHTestGauge {ith_test_gauge_id} not found")
+        pages.extend(_ith_test_gauge_certificate_pages(gauge, variant))
     return _build_pdf(pages)
 
 
@@ -2379,6 +2442,26 @@ def service_measurements_report(service_id: int):
         response = Response(pdf_bytes, mimetype="application/pdf")
         response.headers["Content-Disposition"] = (
             f'inline; filename="service-measurements-{service_id}.pdf"'
+        )
+        return response
+    finally:
+        session.close()
+
+
+@bp.route("/service-packet/<int:service_id>")
+def service_packet_report(service_id: int):
+    session = _get_session()
+    try:
+        pdf_bytes = build_service_packet_pdf(
+            session,
+            service_id,
+            request.args.get("region"),
+            request.args.get("variant"),
+            request.args.get("gauge_id", type=int),
+        )
+        response = Response(pdf_bytes, mimetype="application/pdf")
+        response.headers["Content-Disposition"] = (
+            f'inline; filename="service-packet-{service_id}.pdf"'
         )
         return response
     finally:

@@ -1,4 +1,3 @@
-29. 2026-04-20: F-077 Production PostgreSQL Configuration implemented with env-driven DATABASE_URL, PostgreSQL pooling, Alembic production URL support, tests, and ADR.
 30. 2026-04-20: F-078 Data Migration from Access to PostgreSQL implemented with Access row normalization, replication-column exclusion, dependency-ordered table loading, tests, and ADR.
 31. 2026-04-20: F-079 Error Handling and 404/500 Pages implemented with custom error pages, global exception logging, tests, and ADR.
 32. 2026-04-20: F-080 Session Management Middleware implemented with shared request-session helper, teardown cleanup, regression test, and ADR.
@@ -14,3 +13,4 @@
 42. 2026-04-20: F-090 DN Import List HTML report implemented with PartsSold-backed import rows, HTML route, tests, and ADR.
 43. 2026-04-20: F-091 Open Order Report HTML implemented with customer-resolved SAP open orders, HTML route, tests, and ADR.
 44. 2026-04-20: F-092 Conditional Row Formatting implemented with CSS zebra striping and current-row highlighting, regression test, and ADR.
+45. 2026-04-20: F-093 Service Packet PDF implemented with bundled service quote, measurement, and optional gauge certificate pages, route, tests, and ADR.
