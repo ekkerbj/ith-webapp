@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime, time, timezone
 from collections import defaultdict
 from decimal import Decimal
+from urllib.parse import urlparse
 
 from flask import Blueprint, Response, abort, current_app, render_template_string, request
 
@@ -1415,6 +1416,16 @@ def _open_order_rows(session, customer_id: int) -> tuple[Customer, list[object]]
     return customer, orders
 
 
+def _batch_print_queue_documents(urls: list[str]) -> list[dict[str, str]]:
+    documents: list[dict[str, str]] = []
+    for url in urls:
+        parsed = urlparse(url)
+        if parsed.scheme or parsed.netloc or not parsed.path.startswith("/"):
+            abort(400, description=f"Invalid document URL: {url}")
+        documents.append({"url": url})
+    return documents
+
+
 def _parse_audit_trail_date(value: str | None) -> date | None:
     if not value:
         return None
@@ -1622,6 +1633,28 @@ _OPEN_ORDER_REPORT_TEMPLATE = """
     {% endif %}
   </tbody>
 </table>
+{% endblock %}
+"""
+
+
+_BATCH_PRINT_QUEUE_TEMPLATE = """
+{% extends "base.html" %}
+{% block title %}Batch Print Queue - ITH{% endblock %}
+{% block content %}
+<h1>Batch Print Queue</h1>
+{% if documents %}
+<p>Use the browser print dialog to print the queued documents together.</p>
+<ol class="batch-print-queue">
+  {% for document in documents %}
+  <li class="batch-print-queue__item">
+    <p><a href="{{ document.url }}">{{ document.url }}</a></p>
+    <iframe class="batch-print-queue__frame" src="{{ document.url }}" title="Queued document {{ loop.index }}"></iframe>
+  </li>
+  {% endfor %}
+</ol>
+{% else %}
+<p>No documents selected.</p>
+{% endif %}
 {% endblock %}
 """
 
@@ -2073,6 +2106,12 @@ def open_order_report(customer_id: int):
         )
     finally:
         session.close()
+
+
+@bp.route("/batch-print-queue")
+def batch_print_queue_report():
+    documents = _batch_print_queue_documents(request.args.getlist("url"))
+    return render_template_string(_BATCH_PRINT_QUEUE_TEMPLATE, documents=documents)
 
 
 _CUSTOMER_DETAIL_TEMPLATE = """
