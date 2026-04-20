@@ -14,3 +14,4 @@
 32. 2026-04-20: F-080 Session Management Middleware implemented with shared request-session helper, teardown cleanup, regression test, and ADR.
 33. 2026-04-20: F-081 Report - Toolset (PDF) implemented with customer tool detail PDF output, route, tests, and ADR.
 34. 2026-04-20: F-082 Report - Communication and Lead Letters (PDF) implemented with customer communication, wind turbine lead letter, and follow-up letter PDF routes, tests, and ADR.
+35. 2026-04-20: F-083 Report - Names and CC Form (PDF) implemented with customer contact names and credit card authorization form PDF routes, tests, and ADR.

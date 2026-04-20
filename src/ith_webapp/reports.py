@@ -14,6 +14,7 @@ from ith_webapp.models import (
     CustomerApplication,
     CustomerApplicationSpecs,
     CustomerCommunicationLog,
+    CustomerContact,
     ConsignmentList,
     CustomerTools,
     CustomerToolsSub,
@@ -661,6 +662,61 @@ def build_customer_communication_report_pdf(session, customer_id: int) -> bytes:
     customer, logs = _customer_communication_rows(session, customer_id)
     pages = _paginate(_customer_communication_lines(customer, logs))
     return _build_pdf(pages)
+
+
+def _names_rows(session) -> list[dict[str, object]]:
+    rows = (
+        session.query(CustomerContact, Customer)
+        .join(Customer, Customer.customer_id == CustomerContact.customer_id)
+        .order_by(Customer.customer_name, CustomerContact.name, CustomerContact.contact_id)
+        .all()
+    )
+    return [{"contact": contact, "customer": customer} for contact, customer in rows]
+
+
+def _names_lines(rows: list[dict[str, object]]) -> list[str]:
+    lines = ["Names Report", "Customer Contact Names"]
+    if not rows:
+        lines.append("(none)")
+        return lines
+    for row in rows:
+        contact = row["contact"]
+        customer = row["customer"]
+        lines.extend(
+            [
+                "",
+                f"Customer: {customer.customer_name or ''}",
+                f"Contact: {contact.name or ''}",
+                f"Email: {contact.email or ''}",
+                f"Phone: {contact.phone or ''}",
+                f"Position: {contact.position or ''}",
+            ]
+        )
+    return lines
+
+
+def build_names_pdf(session) -> bytes:
+    pages = _paginate(_names_lines(_names_rows(session)))
+    return _build_pdf(pages)
+
+
+def _credit_card_authorization_form_lines() -> list[str]:
+    return [
+        "Credit Card Authorization Form",
+        "",
+        "Customer Name: ____________________",
+        "Card Code: _________________________",
+        "Authorized Amount: ________________",
+        "Authorized By: _____________________",
+        "",
+        "Signature",
+        "Signature: ________________________",
+        "Date: _____________________________",
+    ]
+
+
+def build_credit_card_authorization_form_pdf() -> bytes:
+    return _build_pdf(_paginate(_credit_card_authorization_form_lines()))
 
 
 def _wind_turbine_lead_rows(
@@ -1996,6 +2052,29 @@ def customer_communication_report(customer_id: int):
         return response
     finally:
         session.close()
+
+
+@bp.route("/names")
+def names_report():
+    session = _get_session()
+    try:
+        pdf_bytes = build_names_pdf(session)
+        response = Response(pdf_bytes, mimetype="application/pdf")
+        response.headers["Content-Disposition"] = 'inline; filename="names.pdf"'
+        return response
+    finally:
+        session.close()
+
+
+@bp.route("/credit-card-authorization-form")
+@bp.route("/cc-form")
+def credit_card_authorization_form_report():
+    pdf_bytes = build_credit_card_authorization_form_pdf()
+    response = Response(pdf_bytes, mimetype="application/pdf")
+    response.headers["Content-Disposition"] = (
+        'inline; filename="credit-card-authorization-form.pdf"'
+    )
+    return response
 
 
 @bp.route("/wind-turbine-leads/<int:lead_id>/letter")
