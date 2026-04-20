@@ -16,6 +16,7 @@ from sqlalchemy import or_
 from ith_webapp.models.customer import Customer
 from ith_webapp.models.customer_address import CustomerAddress
 from ith_webapp.repositories.customer_repository import CustomerRepository
+from ith_webapp.services.list_exports import build_list_export_response
 from ith_webapp.services.pagination import paginate_query
 from ith_webapp.services.table_sorting import apply_sorting, build_sortable_columns
 from ith_webapp.services.audit_trail import record_audit_change
@@ -454,6 +455,27 @@ def customer_list():
             },
             "customer_id",
         )
+        headers = [
+            "Name",
+            "Card Code",
+            "Active",
+        ]
+        export_rows = [
+            [
+                item.customer_name or "",
+                item.card_code or "",
+                "Yes" if item.active else "No",
+            ]
+            for item in items_query.all()
+        ]
+        export_response = build_list_export_response(
+            title="Customers",
+            headers=headers,
+            rows=export_rows,
+            export_format=request.args.get("format"),
+        )
+        if export_response is not None:
+            return export_response
         items, pagination = paginate_query(
             items_query,
             "customers.customer_list",

@@ -4,6 +4,13 @@
 
 {% block content %}
 <h1>{{ heading }}</h1>
+<form method="get" class="export-actions">
+    {% for key, value in request.args.items() if key not in ["page", "page_size", "format"] %}
+    <input type="hidden" name="{{ key }}" value="{{ value }}">
+    {% endfor %}
+    <button type="submit" name="format" value="csv">Export CSV</button>
+    <button type="submit" name="format" value="excel">Export Excel</button>
+</form>
 {% if rows %}
 <table>
     <thead>

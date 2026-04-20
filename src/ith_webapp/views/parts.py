@@ -18,6 +18,7 @@ from sqlalchemy import or_
 from ith_webapp.models.part import Part
 from ith_webapp.models.parts_sold import PartsSold
 from ith_webapp.services.barcode_generation import generate_code128_svg
+from ith_webapp.services.list_exports import build_list_export_response
 from ith_webapp.services.pagination import paginate_query
 from ith_webapp.services.table_sorting import apply_sorting, build_sortable_columns
 from ith_webapp.views.session import get_session
@@ -140,6 +141,27 @@ def part_list():
             },
             "part_id",
         )
+        headers = [
+            "Item Code",
+            "Description",
+            "Active",
+        ]
+        export_rows = [
+            [
+                item.part_number,
+                item.description or "",
+                "Yes" if item.active else "No",
+            ]
+            for item in items_query.all()
+        ]
+        export_response = build_list_export_response(
+            title="Parts",
+            headers=headers,
+            rows=export_rows,
+            export_format=request.args.get("format"),
+        )
+        if export_response is not None:
+            return export_response
         items, pagination = paginate_query(
             items_query,
             "parts.part_list",

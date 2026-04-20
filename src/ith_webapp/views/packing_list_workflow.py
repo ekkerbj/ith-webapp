@@ -2,6 +2,7 @@ from flask import Blueprint, Response, current_app, render_template, render_temp
 from sqlalchemy import or_
 
 from ith_webapp.models.packing_list import PackingList
+from ith_webapp.services.list_exports import build_list_export_response
 from ith_webapp.services.barcode_generation import generate_code128_svg
 from ith_webapp.services.pagination import paginate_query
 from ith_webapp.services.table_sorting import apply_sorting, build_sortable_columns
@@ -60,6 +61,27 @@ def packing_list_index():
             },
             "id",
         )
+        headers = [
+            "Customer",
+            "Packing Date",
+            "ID",
+        ]
+        export_rows = [
+            [
+                packing_list.customer_name or "",
+                packing_list.packing_date or "",
+                packing_list.id,
+            ]
+            for packing_list in items_query.all()
+        ]
+        export_response = build_list_export_response(
+            title="Packing Lists",
+            headers=headers,
+            rows=export_rows,
+            export_format=request.args.get("format"),
+        )
+        if export_response is not None:
+            return export_response
         packing_lists, pagination = paginate_query(
             items_query,
             "packing_list_workflow.packing_list_index",

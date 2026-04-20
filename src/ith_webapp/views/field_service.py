@@ -6,6 +6,7 @@ from ith_webapp.models.customer import Customer
 from ith_webapp.models.field_service import FieldService
 from ith_webapp.models.field_service_status import FieldServiceStatus
 from ith_webapp.services.date_filtering import current_month_filter
+from ith_webapp.services.list_exports import build_list_export_response
 from ith_webapp.services.pagination import paginate_query
 from ith_webapp.services.table_sorting import apply_sorting, build_sortable_columns
 from ith_webapp.views.session import get_session
@@ -48,6 +49,27 @@ def field_service_list():
             },
             "field_service_id",
         )
+        headers = [
+            "Customer",
+            "Status",
+            "Notes",
+        ]
+        export_rows = [
+            [
+                getattr(item.customer, "customer_name", "") or "",
+                getattr(item.field_service_status, "name", "") or "",
+                item.visit_notes or "",
+            ]
+            for item in items_query.all()
+        ]
+        export_response = build_list_export_response(
+            title="Field Services",
+            headers=headers,
+            rows=export_rows,
+            export_format=request.args.get("format"),
+        )
+        if export_response is not None:
+            return export_response
         items, pagination = paginate_query(
             items_query,
             "field_services.field_service_list",
