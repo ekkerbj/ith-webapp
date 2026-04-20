@@ -187,6 +187,34 @@ def _packing_list_lines(packing_list: PackingList, subs: list[PackingListSub]) -
                     f"COO: {sub.COO or ''}",
                     f"In Bond Code: {sub.in_bond_code or ''}",
                     "",
+            ]
+        )
+    return lines
+
+
+def _commercial_invoice_and_sli_lines(
+    packing_list: PackingList, subs: list[PackingListSub]
+) -> list[str]:
+    lines = [
+        "Commercial Invoice",
+        f"Packing List ID: {packing_list.id}",
+        "",
+        "Shipper's Letter of Instruction",
+        "Export Compliance",
+    ]
+    if not subs:
+        lines.append("(none)")
+    else:
+        for sub in subs:
+            lines.extend(
+                [
+                    f"Line {sub.id}",
+                    f"Harm Number: {sub.harm_number or ''}",
+                    f"EECN: {sub.EECN or ''}",
+                    f"DDTC: {sub.DDTC or ''}",
+                    f"COO: {sub.COO or ''}",
+                    f"In Bond Code: {sub.in_bond_code or ''}",
+                    "",
                 ]
             )
     return lines
@@ -355,6 +383,20 @@ def build_packing_list_pdf(session, packing_list_id: int) -> bytes:
     return _build_pdf(pages)
 
 
+def build_commercial_invoice_and_sli_pdf(session, packing_list_id: int) -> bytes:
+    packing_list = session.get(PackingList, packing_list_id)
+    if packing_list is None:
+        raise ValueError(f"PackingList {packing_list_id} not found")
+    subs = (
+        session.query(PackingListSub)
+        .filter(PackingListSub.packing_list_id == packing_list_id)
+        .order_by(PackingListSub.id)
+        .all()
+    )
+    pages = _paginate(_commercial_invoice_and_sli_lines(packing_list, subs))
+    return _build_pdf(pages)
+
+
 def build_check_in_pdf(session, check_in_id: int) -> bytes:
     check_in = session.get(CheckIn, check_in_id)
     if check_in is None:
@@ -426,6 +468,20 @@ def packing_list_report(packing_list_id: int):
         response = Response(pdf_bytes, mimetype="application/pdf")
         response.headers["Content-Disposition"] = (
             f'inline; filename="packing-list-{packing_list_id}.pdf"'
+        )
+        return response
+    finally:
+        session.close()
+
+
+@bp.route("/commercial-invoice-and-sli/<int:packing_list_id>")
+def commercial_invoice_and_sli_report(packing_list_id: int):
+    session = _get_session()
+    try:
+        pdf_bytes = build_commercial_invoice_and_sli_pdf(session, packing_list_id)
+        response = Response(pdf_bytes, mimetype="application/pdf")
+        response.headers["Content-Disposition"] = (
+            f'inline; filename="commercial-invoice-and-sli-{packing_list_id}.pdf"'
         )
         return response
     finally:
