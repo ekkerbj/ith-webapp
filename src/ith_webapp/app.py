@@ -222,18 +222,16 @@ def create_app(testing: bool = False) -> Flask:
     def login():
         return render_template_string(
             """
-            <!doctype html>
-            <html lang="en">
-            <head><title>Login</title></head>
-            <body>
-              <h1>Login</h1>
-              <form method="post">
-                <label>Email <input type="email" name="email"></label>
-                <label>Password <input type="password" name="password"></label>
-                <button type="submit">Sign in</button>
-              </form>
-            </body>
-            </html>
+            {% extends "base.html" %}
+            {% block title %}Login - ITH{% endblock %}
+            {% block content %}
+            <h1>Login</h1>
+            <form method="post">
+              <label>Email <input type="email" name="email"></label>
+              <label>Password <input type="password" name="password"></label>
+              <button type="submit">Sign in</button>
+            </form>
+            {% endblock %}
             """
         )
 
@@ -319,6 +317,9 @@ def create_app(testing: bool = False) -> Flask:
 
     from ith_webapp.views.ith_test_gauges import bp as ith_test_gauges_bp
     app.register_blueprint(ith_test_gauges_bp)
+
+    from ith_webapp.reports import bp as reports_bp
+    app.register_blueprint(reports_bp)
 
     # Register Packing List Workflow blueprint
     from ith_webapp.views.packing_list_workflow import bp as packing_list_workflow_bp
