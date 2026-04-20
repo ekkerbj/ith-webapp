@@ -1,4 +1,3 @@
-2026-04-19: F-041 Authentication - Firebase Auth Integration implemented with Firebase-backed login, Flask session gating, tests, and ADR.
 2026-04-19: F-042 Role-Based Access Control implemented with session role resolution, request-time authorization, tests, and ADR.
 2026-04-19: F-043 Navigation and Switchboard implemented with a sectioned root landing page, route links, tests, and ADR.
 2026-04-19: F-044 CSS Styling and Responsive Layout implemented with shared login shell, vanilla responsive stylesheet, tests, and ADR.
@@ -14,3 +13,4 @@
 2026-04-19: F-053 Customer Reports implemented with HTML detail/group/pricing/inventory routes, tests, and ADR.
 2026-04-19: F-054 Field Service Reports implemented with PDF report, summary, and customer-facing timesheet routes, tests, and ADR.
 2026-04-19: F-055 SAP Financial Summaries implemented with server-rendered HTML breakdown tables, tests, and ADR.
+2026-04-19: F-056 Parts Catalog implemented with HTML/PDF report surfaces, BOM and cross-reference sections, tests, and ADR.

@@ -11,6 +11,7 @@ from ith_webapp.models import (
     Customer,
     CustomerApplication,
     CustomerApplicationSpecs,
+    ConsignmentList,
     CustomerTools,
     ITHTestGauge,
     FieldService,
@@ -174,6 +175,122 @@ def _basic_quote_lines(
             "Available upon request.",
         ]
     )
+    return lines
+
+
+def _parts_catalog_context(session, part_id: int) -> dict[str, object]:
+    part = session.get(Part, part_id)
+    if part is None:
+        raise ValueError(f"Part {part_id} not found")
+    bom_rows = (
+        session.query(PartsList, PartsSub)
+        .join(PartsSub, PartsSub.parts_list_id == PartsList.id)
+        .filter(PartsSub.part_id == part_id)
+        .order_by(PartsList.id, PartsSub.id)
+        .all()
+    )
+    cross_reference_rows = (
+        session.query(ConsignmentList)
+        .filter(ConsignmentList.part_id == part_id)
+        .order_by(ConsignmentList.consignment_list_id)
+        .all()
+    )
+    return {
+        "part": part,
+        "image_url": getattr(part, "image_url", "") or "",
+        "bom_rows": [
+            {
+                "parts_list": parts_list,
+                "quantity": sub.quantity,
+            }
+            for parts_list, sub in bom_rows
+        ],
+        "cross_reference_rows": [
+            {
+                "customer": row.customer,
+                "quantity": row.quantity,
+            }
+            for row in cross_reference_rows
+        ],
+    }
+
+
+_PARTS_CATALOG_TEMPLATE = """
+{% extends "base.html" %}
+{% block title %}Parts Catalog - ITH{% endblock %}
+{% block content %}
+<h1>Parts Catalog</h1>
+<table>
+  <tr><th>Part Number</th><td>{{ part.part_number }}</td></tr>
+  <tr><th>Description</th><td>{{ part.description or "" }}</td></tr>
+  <tr><th>Active</th><td>{{ "Yes" if part.active else "No" }}</td></tr>
+</table>
+<section>
+  <h2>Item Image</h2>
+  {% if image_url %}
+  <p>{{ image_url }}</p>
+  {% else %}
+  <p>No image on file.</p>
+  {% endif %}
+</section>
+<section>
+  <h2>Bill of Materials</h2>
+  {% if bom_rows %}
+  <ul>
+    {% for row in bom_rows %}
+    <li>{{ row.parts_list.name }} | Qty {{ row.quantity }}</li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>(none)</p>
+  {% endif %}
+</section>
+<section>
+  <h2>Customer Cross-References</h2>
+  {% if cross_reference_rows %}
+  <ul>
+    {% for row in cross_reference_rows %}
+    <li>{{ row.customer.customer_name }}{% if row.customer.card_code %} | {{ row.customer.card_code }}{% endif %} | Qty {{ row.quantity }}</li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>(none)</p>
+  {% endif %}
+</section>
+{% endblock %}
+"""
+
+
+def _parts_catalog_lines(context: dict[str, object]) -> list[str]:
+    part = context["part"]
+    lines = [
+        "Parts Catalog",
+        f"Part Number: {part.part_number}",
+        f"Description: {part.description or ''}",
+        f"Active: {'Yes' if part.active else 'No'}",
+        "",
+        "Item Image",
+    ]
+    image_url = context["image_url"]
+    lines.append(image_url if image_url else "No image on file.")
+    lines.extend(["", "Bill of Materials"])
+    bom_rows = context["bom_rows"]
+    if not bom_rows:
+        lines.append("(none)")
+    else:
+        for row in bom_rows:
+            lines.append(f" - {row['parts_list'].name} | Qty {row['quantity']}")
+    lines.extend(["", "Customer Cross-References"])
+    cross_reference_rows = context["cross_reference_rows"]
+    if not cross_reference_rows:
+        lines.append("(none)")
+    else:
+        for row in cross_reference_rows:
+            customer = row["customer"]
+            label = customer.customer_name
+            if customer.card_code:
+                label += f" | {customer.card_code}"
+            lines.append(f" - {label} | Qty {row['quantity']}")
     return lines
 
 
@@ -676,6 +793,11 @@ def build_basic_quote_pdf(session, parts_list_id: int, region: str | None = None
     return _build_pdf(pages)
 
 
+def build_parts_catalog_pdf(session, part_id: int) -> bytes:
+    pages = _paginate(_parts_catalog_lines(_parts_catalog_context(session, part_id)))
+    return _build_pdf(pages)
+
+
 def build_packing_list_pdf(session, packing_list_id: int) -> bytes:
     packing_list = session.get(PackingList, packing_list_id)
     if packing_list is None:
@@ -749,6 +871,30 @@ def build_service_measurements_pdf(session, service_id: int) -> bytes:
         raise ValueError(f"ServiceMeasurements for service {service_id} not found")
     pages = _service_measurement_report_pages(service, measurement)
     return _build_pdf(pages)
+
+
+@bp.route("/parts/<int:part_id>")
+def parts_catalog_report(part_id: int):
+    session = _get_session()
+    try:
+        context = _parts_catalog_context(session, part_id)
+        return render_template_string(_PARTS_CATALOG_TEMPLATE, **context)
+    finally:
+        session.close()
+
+
+@bp.route("/parts/<int:part_id>/pdf")
+def parts_catalog_pdf_report(part_id: int):
+    session = _get_session()
+    try:
+        pdf_bytes = build_parts_catalog_pdf(session, part_id)
+        response = Response(pdf_bytes, mimetype="application/pdf")
+        response.headers["Content-Disposition"] = (
+            f'inline; filename="parts-catalog-{part_id}.pdf"'
+        )
+        return response
+    finally:
+        session.close()
 
 
 _CUSTOMER_DETAIL_TEMPLATE = """
