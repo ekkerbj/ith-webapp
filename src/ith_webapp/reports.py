@@ -1177,6 +1177,48 @@ _SAP_FINANCIAL_SUMMARY_TEMPLATE = """
 """
 
 
+_ITEM_USAGE_TEMPLATE = """
+{% extends "base.html" %}
+{% block title %}Item Usage Analytics - ITH{% endblock %}
+{% block content %}
+<h1>Item Usage Analytics</h1>
+{% for period in periods %}
+<section>
+  <h2>{{ period.label }}</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Item Code</th>
+        <th>Item Name</th>
+        <th>Credit Memo Qty</th>
+        <th>Invoice Qty</th>
+        <th>Production Qty</th>
+        <th>Assembly/Disassembly Qty</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% if period.rows %}
+      {% for row in period.rows %}
+      <tr>
+        <td>{{ row.item_code }}</td>
+        <td>{{ row.item_name }}</td>
+        <td>{{ row.credit_memo_qty if row.credit_memo_qty is not none else "" }}</td>
+        <td>{{ row.invoice_qty if row.invoice_qty is not none else "" }}</td>
+        <td>{{ row.production_qty if row.production_qty is not none else "" }}</td>
+        <td>{{ row.assembly_disassembly_qty if row.assembly_disassembly_qty is not none else "" }}</td>
+      </tr>
+      {% endfor %}
+      {% else %}
+      <tr><td colspan="6">(none)</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+</section>
+{% endfor %}
+{% endblock %}
+"""
+
+
 def _financial_summary_document_types(document_type: str | None) -> list[str]:
     selected = (document_type or "").strip().lower()
     if not selected:
@@ -1250,6 +1292,31 @@ def _financial_summary_documents(
         ]
         documents.append({"title": title, "summaries": summaries})
     return documents
+
+
+def _item_usage_period_label(period_years: int) -> str:
+    return "1 Year" if period_years == 1 else f"{period_years} Years"
+
+
+def _item_usage_rows(repository, period_years: int) -> list[object]:
+    method = getattr(repository, "list_item_usage", None)
+    if method is None:
+        raise RuntimeError("Item usage repository is missing list_item_usage()")
+    rows = list(method(period_years))
+    return sorted(
+        rows,
+        key=lambda row: (
+            (getattr(row, "item_code", None) or "").lower(),
+            (getattr(row, "item_name", None) or "").lower(),
+        ),
+    )
+
+
+def _item_usage_periods(repository) -> list[dict[str, object]]:
+    return [
+        {"label": _item_usage_period_label(period_years), "rows": _item_usage_rows(repository, period_years)}
+        for period_years in (1, 2, 3)
+    ]
 
 
 @bp.route("/service-multi-quote/<int:service_id>")
@@ -1529,3 +1596,10 @@ def sap_financial_summaries_report(
         _financial_summary_group_bys(group_by or request.args.get("group_by")),
     )
     return render_template_string(_SAP_FINANCIAL_SUMMARY_TEMPLATE, documents=documents)
+
+
+@bp.route("/sap/item-usage")
+def sap_item_usage_report():
+    repository = current_app.config["SAP_ITEM_USAGE_REPOSITORY"]
+    periods = _item_usage_periods(repository)
+    return render_template_string(_ITEM_USAGE_TEMPLATE, periods=periods)
