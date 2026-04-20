@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}ITH Test Gauges - ITH{% endblock %}
+
+{% block content %}
+<h1>ITH Test Gauges</h1>
+{% if items %}
+<table>
+    <thead>
+        <tr>
+            <th>Type</th>
+            <th>Name</th>
+            <th>Serial Number</th>
+            <th>Calibration Due</th>
+            <th>Certification Due</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in items %}
+        <tr>
+            <td><a href="{{ url_for('ith_test_gauges.ith_test_gauge_detail', ith_test_gauge_id=item.ith_test_gauge_id) }}">{{ item.ith_test_gauge_type.name }}</a></td>
+            <td>{{ item.name }}</td>
+            <td>{{ item.serial_number }}</td>
+            <td>{{ item.calibration_due_date or "" }}</td>
+            <td>{{ item.certification_due_date or "" }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p>No ITH test gauges found.</p>
+{% endif %}
+{% endblock %}

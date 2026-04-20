@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}{{ "Edit" if item else "New" }} Field Service - ITH{% endblock %}
+
+{% block content %}
+<h1>{{ "Edit" if item else "New" }} Field Service</h1>
+
+<form method="post">
+    <label for="customer_id">Customer ID</label>
+    <input type="number" id="customer_id" name="customer_id" value="{{ item.customer_id if item else '' }}" required>
+
+    <label for="field_service_status_id">Status ID</label>
+    <input type="number" id="field_service_status_id" name="field_service_status_id" value="{{ item.field_service_status_id if item else '' }}" required>
+
+    <label for="visit_notes">Visit Notes</label>
+    <textarea id="visit_notes" name="visit_notes">{{ item.visit_notes if item else '' }}</textarea>
+
+    <button type="submit">Save</button>
+</form>
+
+<a href="{{ url_for('field_services.field_service_list') }}">Back to list</a>
+{% endblock %}

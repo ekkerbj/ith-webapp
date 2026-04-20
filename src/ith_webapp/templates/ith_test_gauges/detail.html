@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}{{ item.name or "ITH Test Gauge" }} - ITH{% endblock %}
+
+{% block content %}
+<h1>{{ item.name or "ITH Test Gauge" }}</h1>
+
+<table>
+    <tr>
+        <th>Type</th>
+        <td>{{ item.ith_test_gauge_type.name }}</td>
+    </tr>
+    <tr>
+        <th>Name</th>
+        <td>{{ item.name or "" }}</td>
+    </tr>
+    <tr>
+        <th>Serial Number</th>
+        <td>{{ item.serial_number }}</td>
+    </tr>
+    <tr>
+        <th>Calibration Due</th>
+        <td>{{ item.calibration_due_date or "" }}</td>
+    </tr>
+    <tr>
+        <th>Certification Due</th>
+        <td>{{ item.certification_due_date or "" }}</td>
+    </tr>
+</table>
+
+<a href="{{ url_for('ith_test_gauges.ith_test_gauge_list') }}">Back to list</a>
+{% endblock %}

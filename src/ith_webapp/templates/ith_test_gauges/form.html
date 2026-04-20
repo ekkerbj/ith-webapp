@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}{{ "Edit" if item else "New" }} ITH Test Gauge - ITH{% endblock %}
+
+{% block content %}
+<h1>{{ "Edit" if item else "New" }} ITH Test Gauge</h1>
+
+<form method="post">
+    <label for="ith_test_gauge_type_id">Gauge Type ID</label>
+    <input type="number" id="ith_test_gauge_type_id" name="ith_test_gauge_type_id" value="{{ item.ith_test_gauge_type_id if item else '' }}" required>
+
+    <label for="name">Name</label>
+    <input type="text" id="name" name="name" value="{{ item.name if item else '' }}" required>
+
+    <label for="serial_number">Serial Number</label>
+    <input type="text" id="serial_number" name="serial_number" value="{{ item.serial_number if item else '' }}" required>
+
+    <label for="calibration_due_date">Calibration Due Date</label>
+    <input type="date" id="calibration_due_date" name="calibration_due_date" value="{{ item.calibration_due_date.isoformat() if item and item.calibration_due_date else '' }}">
+
+    <label for="certification_due_date">Certification Due Date</label>
+    <input type="date" id="certification_due_date" name="certification_due_date" value="{{ item.certification_due_date.isoformat() if item and item.certification_due_date else '' }}">
+
+    <button type="submit">Save</button>
+</form>
+
+<a href="{{ url_for('ith_test_gauges.ith_test_gauge_list') }}">Back to list</a>
+{% endblock %}
