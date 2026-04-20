@@ -885,6 +885,49 @@ def build_field_service_summary_pdf(session, field_service_id: int) -> bytes:
     return _build_pdf(pages)
 
 
+def _field_service_hours_graph_rows(session, customer_id: int) -> list[dict[str, object]]:
+    rows = _field_service_time_rows(session, customer_id)
+    totals: dict[str, Decimal] = defaultdict(lambda: Decimal("0"))
+    for time_entry, _service in rows:
+        totals[time_entry.date] += Decimal(str(time_entry.hours))
+    return [
+        {"date": date, "hours": hours}
+        for date, hours in sorted(totals.items(), key=lambda item: item[0])
+    ]
+
+
+def _field_service_hours_graph_lines(
+    field_service: FieldService, rows: list[dict[str, object]]
+) -> list[str]:
+    customer_name = getattr(field_service.customer, "customer_name", "") or ""
+    total_hours = sum((row["hours"] for row in rows), Decimal("0"))
+    lines = [
+        "Field Service Hours Graph",
+        f"Customer: {customer_name}",
+        f"Visit Date: {field_service.visit_date.isoformat()}",
+        "",
+        "Hours by Date",
+    ]
+    if not rows:
+        lines.append("(none)")
+    else:
+        for row in rows:
+            hours = row["hours"]
+            bar = "#" * max(1, int(hours * 2))
+            lines.append(f" - {row['date']} | {bar} {hours:.2f}")
+    lines.extend(["", f"Total Hours: {total_hours:.2f}"])
+    return lines
+
+
+def build_field_service_hours_graph_pdf(session, field_service_id: int) -> bytes:
+    field_service = session.get(FieldService, field_service_id)
+    if field_service is None:
+        raise ValueError(f"FieldService {field_service_id} not found")
+    rows = _field_service_hours_graph_rows(session, field_service.customer_id)
+    pages = _paginate(_field_service_hours_graph_lines(field_service, rows))
+    return _build_pdf(pages)
+
+
 def build_field_service_timesheet_pdf(
     session, field_service_id: int, customer_facing: bool = False
 ) -> bytes:
@@ -2532,6 +2575,20 @@ def field_service_summary_report(field_service_id: int):
         response = Response(pdf_bytes, mimetype="application/pdf")
         response.headers["Content-Disposition"] = (
             f'inline; filename="field-service-summary-{field_service_id}.pdf"'
+        )
+        return response
+    finally:
+        session.close()
+
+
+@bp.route("/field-service-hours-graph/<int:field_service_id>")
+def field_service_hours_graph_report(field_service_id: int):
+    session = _get_session()
+    try:
+        pdf_bytes = build_field_service_hours_graph_pdf(session, field_service_id)
+        response = Response(pdf_bytes, mimetype="application/pdf")
+        response.headers["Content-Disposition"] = (
+            f'inline; filename="field-service-hours-graph-{field_service_id}.pdf"'
         )
         return response
     finally:

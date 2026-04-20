@@ -9,6 +9,7 @@ from ith_webapp.models import (
 )
 from ith_webapp.reports import (
     build_field_service_report_pdf,
+    build_field_service_hours_graph_pdf,
     build_field_service_summary_pdf,
     build_field_service_timesheet_pdf,
 )
@@ -118,5 +119,94 @@ def test_field_service_report_routes_return_pdfs(app):
         assert summary_response.mimetype == "application/pdf"
         assert timesheet_response.status_code == 200
         assert timesheet_response.mimetype == "application/pdf"
+    finally:
+        session.close()
+
+
+def test_build_field_service_hours_graph_pdf_includes_hour_bars(session: Session):
+    customer = Customer(customer_name="Graph Field Services", active=True)
+    status = FieldServiceStatus(name="Open")
+    session.add_all([customer, status])
+    session.flush()
+
+    field_service = FieldService(
+        customer_id=customer.customer_id,
+        field_service_status_id=status.field_service_status_id,
+    )
+    session.add(field_service)
+    session.flush()
+
+    service_a = Service(customer_id=customer.customer_id, technician="Graph Tech", active=True)
+    service_b = Service(customer_id=customer.customer_id, technician="Graph Tech", active=True)
+    session.add_all([service_a, service_b])
+    session.flush()
+
+    session.add_all(
+        [
+            ServiceTime(
+                service_id=service_a.service_id,
+                technician="Graph Tech",
+                hours=1.5,
+                date="2026-04-18",
+                labor_rate=100.0,
+            ),
+            ServiceTime(
+                service_id=service_b.service_id,
+                technician="Graph Tech",
+                hours=3.0,
+                date="2026-04-19",
+                labor_rate=100.0,
+            ),
+        ]
+    )
+    session.commit()
+
+    report_pdf = build_field_service_hours_graph_pdf(session, field_service.field_service_id)
+
+    assert report_pdf.startswith(b"%PDF")
+    assert b"Field Service Hours Graph" in report_pdf
+    assert b"2026-04-18" in report_pdf
+    assert b"2026-04-19" in report_pdf
+
+
+def test_field_service_hours_graph_report_route_returns_pdf(app):
+    factory = app.config["SESSION_FACTORY"]
+    session = factory()
+    try:
+        customer = Customer(customer_name="Route Graph Services", active=True)
+        status = FieldServiceStatus(name="Open")
+        session.add_all([customer, status])
+        session.flush()
+
+        field_service = FieldService(
+            customer_id=customer.customer_id,
+            field_service_status_id=status.field_service_status_id,
+        )
+        session.add(field_service)
+        session.flush()
+
+        service = Service(customer_id=customer.customer_id, technician="Graph Route Tech", active=True)
+        session.add(service)
+        session.flush()
+
+        session.add(
+            ServiceTime(
+                service_id=service.service_id,
+                technician="Graph Route Tech",
+                hours=2.0,
+                date="2026-04-20",
+                labor_rate=100.0,
+            )
+        )
+        session.commit()
+
+        client = app.test_client()
+        response = client.get(
+            f"/reports/field-service-hours-graph/{field_service.field_service_id}"
+        )
+
+        assert response.status_code == 200
+        assert response.mimetype == "application/pdf"
+        assert b"Field Service Hours Graph" in response.data
     finally:
         session.close()
