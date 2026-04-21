@@ -39,3 +39,4 @@ prd.json
 
 # Access database exports
 access/
+start.sh
