@@ -52,3 +52,22 @@ def test_readonly_user_cannot_open_customer_create_form(app):
     response = client.get("/customers/new")
 
     assert response.status_code == 403
+
+
+def test_authenticated_shell_exposes_logout_button(client):
+    response = client.get("/")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert 'action="/logout"' in body
+    assert 'type="submit">Logout<' in body
+
+
+def test_create_app_loads_firebase_api_key_from_environment(monkeypatch):
+    monkeypatch.setenv("FIREBASE_API_KEY", "test-api-key")
+
+    from ith_webapp.app import create_app
+
+    app = create_app(testing=True)
+
+    assert app.config["FIREBASE_API_KEY"] == "test-api-key"

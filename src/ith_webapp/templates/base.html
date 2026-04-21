@@ -33,6 +33,10 @@
             <a href="{{ url_for('sites_wind_gas.list') }}">Wind Gas Sites</a>
             <a href="{{ url_for('wind_turbine_leads.list') }}">Wind Leads</a>
             <a href="{{ url_for('wind_turbine_leads_details.list') }}">Lead Details</a>
+            <form class="app-shell__logout" method="post" action="{{ url_for('logout') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit">Logout</button>
+            </form>
         </nav>
     </header>
     {% with messages = get_flashed_messages(with_categories=true) %}

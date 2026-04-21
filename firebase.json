@@ -1,7 +1,10 @@
 {
   "hosting": {
     "public": "src/ith_webapp",
-    "ignore": ["**", "!static/**"],
+    "ignore": [
+      "**",
+      "!static/**"
+    ],
     "rewrites": [
       {
         "source": "**",
@@ -11,5 +14,10 @@
         }
       }
     ]
+  },
+  "auth": {
+    "providers": {
+      "emailPassword": true
+    }
   }
 }

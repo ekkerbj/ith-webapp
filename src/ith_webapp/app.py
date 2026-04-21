@@ -223,6 +223,9 @@ def create_app(testing: bool = False) -> Flask:
             raise RuntimeError("SECRET_KEY is required outside tests")
     app.secret_key = secret_key
     app.config["AUTH_REQUIRED"] = not testing
+    firebase_api_key = os.getenv("FIREBASE_API_KEY")
+    if firebase_api_key:
+        app.config["FIREBASE_API_KEY"] = firebase_api_key
     app.config.setdefault("LIST_PAGE_SIZE", 20)
     app.config["SESSION_COOKIE_HTTPONLY"] = True
     app.config["SESSION_COOKIE_SAMESITE"] = "Lax"

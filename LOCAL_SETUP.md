@@ -28,6 +28,24 @@ Notes:
 - Set `DATABASE_URL` if you want to point the app at another database.
 - Set `FIREBASE_API_KEY` only if you want to use the real login flow.
 
+## Firebase Local Auth
+
+If you want to test the real Firebase login flow locally, set:
+
+```bash
+export SECRET_KEY='replace-with-a-long-random-secret'
+export FIREBASE_API_KEY='AIza...'
+export DATABASE_URL='sqlite:///ith.db'
+export FLASK_DEBUG=1
+```
+
+Then create a test user in Firebase Authentication with Email/Password enabled and log in at `/login`.
+
+No-cost Firebase setup used by this app:
+
+- Firebase Authentication
+- One Web app for API config
+
 ## Test
 
 ```bash
