@@ -21,9 +21,21 @@ pip install -e ".[dev]"
 flask --app src/ith_webapp/app:create_app run --debug
 ```
 
+For the imported Access dataset, use:
+
+```bash
+./start.sh
+```
+
+To refresh `ith_import.db` from the Access files:
+
+```bash
+.venv/bin/python -m ith_webapp.commands.import_access --database-url sqlite:///ith_import.db --access-dir access
+```
+
 Notes:
 
-- The default local database is SQLite at `sqlite:///ith.db`.
+- The default local database for `start.sh` is SQLite at `sqlite:///ith_import.db`.
 - Tables are created automatically on startup.
 - Set `DATABASE_URL` if you want to point the app at another database.
 - Set `FIREBASE_API_KEY` only if you want to use the real login flow.

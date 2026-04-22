@@ -39,6 +39,18 @@ pytest --cov=ith_webapp
 flask --app src/ith_webapp/app:create_app run --debug
 ```
 
+## Loading Access Data Locally
+
+```bash
+./start.sh
+```
+
+`start.sh` uses `sqlite:///ith_import.db` by default. To rebuild that database from the Access source files, run:
+
+```bash
+.venv/bin/python -m ith_webapp.commands.import_access --database-url sqlite:///ith_import.db --access-dir access
+```
+
 ## Project Structure
 
 ```
