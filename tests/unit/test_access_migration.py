@@ -29,6 +29,20 @@ def test_prepare_access_row_normalizes_source_columns_and_excludes_replication_f
     }
 
 
+def test_prepare_access_row_uses_access_table_label_for_customer_name():
+    from ith_webapp.services.access_migration import prepare_access_row
+
+    source_row = {
+        "Catalog Customer Name": "Acme Corp",
+        "CardCode": "C10001",
+        "Active": "yes",
+    }
+
+    prepared = prepare_access_row(Customer, source_row, access_table_name="Customer")
+
+    assert prepared["customer_name"] == "Acme Corp"
+
+
 def test_prepare_access_row_treats_blank_numeric_fields_as_missing():
     from ith_webapp.services.access_migration import prepare_access_row
 

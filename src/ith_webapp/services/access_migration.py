@@ -158,6 +158,11 @@ def prepare_access_row(
             if value is not None:
                 prepared[key] = _coerce_value(mapper.attrs[key].columns[0].type, value)
 
+    if getattr(model, "__tablename__", None) == "customer":
+        customer_name = lookup.get("catalog_customer_name") or lookup.get("customer")
+        if customer_name:
+            prepared["customer_name"] = _coerce_value(mapper.attrs["customer_name"].columns[0].type, customer_name)
+
     for attribute in mapper.column_attrs:
         column = attribute.columns[0]
         attr_name = attribute.key
