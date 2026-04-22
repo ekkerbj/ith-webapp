@@ -3,14 +3,23 @@
 {% block title %}{{ title }} - ITH{% endblock %}
 
 {% block content %}
-<h1>{{ heading }}</h1>
-<form method="get" class="export-actions">
-    {% for key, value in request.args.items() if key not in ["page", "page_size", "format"] %}
-    <input type="hidden" name="{{ key }}" value="{{ value }}">
-    {% endfor %}
-    <button type="submit" name="format" value="csv">Export CSV</button>
-    <button type="submit" name="format" value="excel">Export Excel</button>
-</form>
+<section class="hero-panel">
+    <p class="eyebrow">List view</p>
+    <h1>{{ heading }}</h1>
+    <p>{{ hero_text or "Review records, export what you need, and open the first column for details." }}</p>
+    <div class="hero-panel__actions">
+        {% if primary_action_url and primary_action_label %}
+        <a href="{{ primary_action_url }}">{{ primary_action_label }}</a>
+        {% endif %}
+        <form method="get" class="export-actions">
+            {% for key, value in request.args.items() if key not in ["page", "page_size", "format"] %}
+            <input type="hidden" name="{{ key }}" value="{{ value }}">
+            {% endfor %}
+            <button type="submit" name="format" value="csv">Export CSV</button>
+            <button type="submit" name="format" value="excel" class="button-secondary">Export Excel</button>
+        </form>
+    </div>
+</section>
 {% if rows %}
 <table>
     <thead>
@@ -59,7 +68,7 @@
 {% if pagination %}
 <section class="pagination">
     <p>Showing {{ pagination.start_item }}-{{ pagination.end_item }} of {{ pagination.total_items }}</p>
-    <nav>
+    <nav class="pagination__controls">
         {% if pagination.previous_url %}
         <a href="{{ pagination.previous_url }}">Previous</a>
         {% else %}

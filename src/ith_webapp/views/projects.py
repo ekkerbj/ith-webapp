@@ -63,7 +63,10 @@ def project_list():
         return render_template(
             "crud/list.html",
             title="Projects",
-            heading="Projects",
+            heading="Project directory",
+            hero_text="Track customer project work and open the record you need.",
+            primary_action_url=url_for("projects.project_create"),
+            primary_action_label="Create project",
             columns=columns,
             rows=rows,
             pagination=pagination,
@@ -80,7 +83,12 @@ def project_detail(project_id: int):
         item = session.get(Project, project_id)
         if item is None:
             return "Not found", 404
-        return render_template("projects/detail.html", item=item)
+        return render_template(
+            "projects/detail.html",
+            item=item,
+            back_url=url_for("projects.project_list"),
+            edit_label="Edit project",
+        )
     finally:
         session.close()
 

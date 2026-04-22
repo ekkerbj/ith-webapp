@@ -29,6 +29,28 @@ def test_packing_list_index_filters_by_customer_or_date():
     assert "Beta Inc" not in html
 
 
+def test_packing_list_index_uses_guided_header_and_action():
+    app = create_app(testing=True)
+    engine = create_engine("sqlite:///:memory:")
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(bind=engine)
+
+    session = factory()
+    session.add(PackingList(customer_name="Acme Corp", packing_date="2026-04-19"))
+    session.commit()
+    session.close()
+
+    app.config["SESSION_FACTORY"] = factory
+    client = app.test_client()
+
+    response = client.get("/packing-lists/")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Packing list queue" in html
+    assert "Track what is ready to ship and what still needs work." in html
+
+
 def test_ready_to_produce_and_ready_to_ship_views():
     app = create_app(testing=True)
     client = app.test_client()

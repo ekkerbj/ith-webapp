@@ -376,7 +376,11 @@ def _render_customer_labels(title: str, variant: str, layout: str) -> str:
             {% extends "base.html" %}
             {% block title %}{{ title }} - ITH{% endblock %}
             {% block content %}
-            <h1>{{ title }}</h1>
+            <section class="hero-panel">
+              <p class="eyebrow">Label sheet</p>
+              <h1>{{ title }}</h1>
+              <p>Print-ready customer labels for the imported dataset.</p>
+            </section>
             <section class="customer-label-sheet customer-label-sheet--{{ layout }}">
               {% if labels %}
                 {% for label in labels %}
@@ -512,7 +516,10 @@ def customer_list():
         return render_template(
             "crud/list.html",
             title="Customers",
-            heading="Customers",
+            heading="Customer directory",
+            hero_text="Browse the imported customer directory and open the first column for details.",
+            primary_action_url=url_for("customers.customer_create"),
+            primary_action_label="Create customer",
             columns=columns,
             rows=rows,
             pagination=pagination,
@@ -530,7 +537,12 @@ def customer_detail(customer_id: int):
         customer = repo.find_by_id(customer_id)
         if customer is None:
             return "Not found", 404
-        return render_template("customers/detail.html", customer=customer)
+        return render_template(
+            "customers/detail.html",
+            customer=customer,
+            back_url=url_for("customers.customer_list"),
+            edit_label="Edit customer",
+        )
     finally:
         session.close()
 

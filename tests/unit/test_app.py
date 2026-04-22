@@ -78,14 +78,25 @@ def test_index_dashboard_shows_summary_counts_recent_activity_and_quick_links(ap
 
         assert response.status_code == 200
         assert "1" in body
-        assert "Recent Activity" in body
+        assert "Recent activity" in body
         assert "customer_name" in body
         assert "tester@example.com" in body
-        assert "Quick Access" in body
-        assert "Customer List" in body
-        assert "Packing List Index" in body
+        assert "Work queue" in body
+        assert "Common tasks" in body
+        assert "View customers" in body
     finally:
         session.close()
+
+
+def test_index_presents_a_more_guided_workflow(app):
+    response = app.test_client().get("/")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "Start here" in body
+    assert "Work queue" in body
+    assert "Common tasks" in body
+    assert "View customers" in body
 
 
 def test_login_page_uses_shared_layout_and_styles(client):
@@ -107,7 +118,26 @@ def test_login_page_exposes_pwa_metadata_and_app_shell_markup(client):
     assert 'rel="manifest"' in body
     assert 'name="theme-color"' in body
     assert 'class="app-shell__header"' in body
-    assert 'class="app-shell__nav"' in body
+    assert 'app-shell__nav--primary' in body
+
+
+def test_login_page_hides_authenticated_navigation(guest_client):
+    response = guest_client.get("/login?next=/")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert "Logout" not in body
+    assert "Customers" not in body
+
+
+def test_login_form_uses_browser_helpful_input_attributes(client):
+    response = client.get("/login?next=/")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert 'autocomplete="email"' in body
+    assert 'autocomplete="current-password"' in body
+    assert 'required' in body
 
 
 def test_login_post_stores_only_minimal_firebase_session(client, app):
@@ -192,6 +222,15 @@ def test_stylesheet_includes_list_row_formatting_rules(client):
     assert "tbody tr:focus-within" in body
 
 
+def test_stylesheet_includes_surface_and_focus_affordances(client):
+    response = client.get("/static/style.css")
+    body = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert ".hero-panel" in body
+    assert ":focus-visible" in body
+
+
 def test_default_startup_creates_tables(tmp_path):
     db_path = tmp_path / "test.db"
     from os import environ
@@ -233,3 +272,47 @@ def test_create_app_uses_database_url_environment_variable(monkeypatch):
     create_app()
 
     assert captured["database_url"] == "postgresql+psycopg://user:pass@db.example.com/ith"
+
+
+def test_create_app_defaults_to_imported_local_database(monkeypatch):
+    captured = {}
+
+    def fake_create_session_factory(database_url="sqlite:///:memory:"):
+        captured["database_url"] = database_url
+
+        class FakeSession:
+            def get_bind(self):
+                return object()
+
+        return lambda: FakeSession()
+
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.setenv("SECRET_KEY", "prod-secret-key")
+    monkeypatch.setattr("ith_webapp.app.create_session_factory", fake_create_session_factory)
+    monkeypatch.setattr("ith_webapp.app.Base.metadata.create_all", lambda bind: None)
+
+    create_app()
+
+    assert captured["database_url"] == "sqlite:///ith_import.db"
+
+
+def test_login_post_uses_local_demo_credentials_without_firebase_key(monkeypatch):
+    monkeypatch.setenv("SECRET_KEY", "prod-secret-key")
+    monkeypatch.setenv("DATABASE_URL", "sqlite:///:memory:")
+    monkeypatch.delenv("FIREBASE_API_KEY", raising=False)
+
+    app = create_app()
+    client = app.test_client()
+    login_page = client.get("/login?next=/")
+    csrf_token = login_page.get_data(as_text=True).split('name="csrf_token" value="')[1].split('"', 1)[0]
+
+    response = client.post(
+        "/login?next=/",
+        data={
+            "email": "test@test.com",
+            "password": "tester6969",
+            "csrf_token": csrf_token,
+        },
+    )
+
+    assert response.status_code == 302

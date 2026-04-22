@@ -3,7 +3,11 @@
 {% block title %}{{ "Edit" if item else "New" }} Field Service - ITH{% endblock %}
 
 {% block content %}
-<h1>{{ "Edit" if item else "New" }} Field Service</h1>
+<section class="hero-panel">
+    <p class="eyebrow">Field service form</p>
+    <h1>{{ "Edit field service" if item else "New field service" }}</h1>
+    <p>Create a service visit and capture notes in one place.</p>
+</section>
 
 <form method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
@@ -16,8 +20,9 @@
     <label for="visit_notes">Visit Notes</label>
     <textarea id="visit_notes" name="visit_notes">{{ item.visit_notes if item else '' }}</textarea>
 
-    <button type="submit">Save</button>
+    <div class="hero-panel__actions">
+        <button type="submit">Save</button>
+        <a class="button-secondary" href="{{ url_for('field_services.field_service_list') }}">Back to field services</a>
+    </div>
 </form>
-
-<a href="{{ url_for('field_services.field_service_list') }}">Back to list</a>
 {% endblock %}

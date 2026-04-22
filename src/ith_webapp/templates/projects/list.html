@@ -3,7 +3,15 @@
 {% block title %}Projects - ITH{% endblock %}
 
 {% block content %}
-<h1>Projects</h1>
+<section class="hero-panel">
+    <p class="eyebrow">Project directory</p>
+    <h1>Projects</h1>
+    <p>Track customer project work and open the record you need.</p>
+    <div class="hero-panel__actions">
+        <a href="{{ url_for('projects.project_create') }}">Create project</a>
+    </div>
+</section>
+
 {% if items %}
 <table>
     <thead>

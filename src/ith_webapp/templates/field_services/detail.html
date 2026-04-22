@@ -3,26 +3,34 @@
 {% block title %}Field Service - ITH{% endblock %}
 
 {% block content %}
-<h1>Field Service</h1>
+<section class="hero-panel">
+    <p class="eyebrow">Service record</p>
+    <h1>Field Service</h1>
+    <p>{{ item.customer.customer_name }}</p>
+    <div class="hero-panel__actions">
+        <a href="{{ back_url or url_for('field_services.field_service_list') }}">Back to field services</a>
+        <a href="{{ url_for('field_services.field_service_edit', field_service_id=item.field_service_id) }}">{{ edit_label or "Edit service" }}</a>
+    </div>
+</section>
 
-<table>
-    <tr>
-        <th>Customer</th>
-        <td>{{ item.customer.customer_name }}</td>
-    </tr>
-    <tr>
-        <th>Status</th>
-        <td>{{ item.field_service_status.name }}</td>
-    </tr>
-    <tr>
-        <th>Visit Notes</th>
-        <td>{{ item.visit_notes or "" }}</td>
-    </tr>
-    <tr>
-        <th>Visit Date</th>
-        <td>{{ item.visit_date }}</td>
-    </tr>
-</table>
-
-<a href="{{ url_for('field_services.field_service_list') }}">Back to list</a>
+<div class="surface-stack">
+    <table>
+        <tr>
+            <th>Customer</th>
+            <td>{{ item.customer.customer_name }}</td>
+        </tr>
+        <tr>
+            <th>Status</th>
+            <td>{{ item.field_service_status.name }}</td>
+        </tr>
+        <tr>
+            <th>Visit Notes</th>
+            <td>{{ item.visit_notes or "" }}</td>
+        </tr>
+        <tr>
+            <th>Visit Date</th>
+            <td>{{ item.visit_date }}</td>
+        </tr>
+    </table>
+</div>
 {% endblock %}

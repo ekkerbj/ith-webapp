@@ -106,7 +106,10 @@ def field_service_list():
         return render_template(
             "crud/list.html",
             title="Field Services",
-            heading="Field Services",
+            heading="Field service queue",
+            hero_text="Open the active service visits for this month.",
+            primary_action_url=url_for("field_services.field_service_create"),
+            primary_action_label="Create field service",
             columns=columns,
             rows=rows,
             pagination=pagination,
@@ -123,7 +126,12 @@ def field_service_detail(field_service_id: int):
         item = session.get(FieldService, field_service_id)
         if item is None:
             return "Not found", 404
-        return render_template("field_services/detail.html", item=item)
+        return render_template(
+            "field_services/detail.html",
+            item=item,
+            back_url=url_for("field_services.field_service_list"),
+            edit_label="Edit service",
+        )
     finally:
         session.close()
 

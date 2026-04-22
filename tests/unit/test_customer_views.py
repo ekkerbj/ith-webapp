@@ -49,6 +49,35 @@ def test_customer_list_renders_empty_state():
     assert "No customers found" in html
 
 
+def test_customer_list_uses_guided_header_and_action():
+    app = _create_test_app_with_customers(
+        Customer(customer_name="Acme Corp", card_code="C10001", active=True),
+    )
+    client = app.test_client()
+
+    response = client.get("/customers/")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Customer directory" in html
+    assert "Browse the imported customer directory" in html
+    assert "Create customer" in html
+
+
+def test_customer_list_uses_guided_header():
+    app = _create_test_app_with_customers(
+        Customer(customer_name="Acme Corp", card_code="C10001", active=True),
+    )
+    client = app.test_client()
+
+    response = client.get("/customers/")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Browse the imported customer directory" in html
+    assert "Create customer" in html
+
+
 def test_customer_list_filters_by_name_or_card_code():
     app = _create_test_app_with_customers(
         Customer(customer_name="Acme Corp", card_code="C10001", active=True),
@@ -98,6 +127,45 @@ def test_customer_detail_renders_customer_fields():
     assert "C10001" in html
     assert "https://acme.example.com" in html
     assert "Important customer" in html
+
+
+def test_customer_detail_uses_guided_summary_and_actions():
+    app = _create_test_app_with_customers(
+        Customer(
+            customer_name="Acme Corp",
+            card_code="C10001",
+            active=True,
+            website="https://acme.example.com",
+        ),
+    )
+    client = app.test_client()
+
+    response = client.get("/customers/1")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Customer record" in html
+    assert "Back to customers" in html
+    assert "Edit customer" in html
+
+
+def test_customer_detail_uses_polished_header_and_actions():
+    app = _create_test_app_with_customers(
+        Customer(
+            customer_name="Acme Corp",
+            card_code="C10001",
+            active=True,
+        ),
+    )
+    client = app.test_client()
+
+    response = client.get("/customers/1")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Customer record" in html
+    assert "Back to customers" in html
+    assert "Edit customer" in html
 
 
 def test_customer_detail_returns_404_for_missing_customer():

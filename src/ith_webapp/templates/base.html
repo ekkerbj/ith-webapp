@@ -20,24 +20,20 @@
                 <span class="app-shell__brand-name">ITH Web App</span>
             </span>
         </a>
-        <nav class="app-shell__nav" aria-label="Primary">
-            <a href="{{ url_for('customers.customer_list') }}">Customers</a>
-            <a href="{{ url_for('consignment_list.consignment_list') }}">Consignment Lists</a>
-            <a href="{{ url_for('rentals.rental_list') }}">Rentals</a>
-            <a href="{{ url_for('field_services.field_service_list') }}">Field Services</a>
-            <a href="{{ url_for('ith_test_gauges.ith_test_gauge_list') }}">ITH Test Gauges</a>
-            <a href="{{ url_for('order_confirmations.order_confirmation_list') }}">Order Confirmations</a>
-            <a href="{{ url_for('reports.audit_trail_report') }}">Audit Trail</a>
-            <a href="{{ url_for('sites_gas_turbines.list') }}">Gas Turbines</a>
-            <a href="{{ url_for('sites_wind_turbines.list') }}">Wind Turbines</a>
-            <a href="{{ url_for('sites_wind_gas.list') }}">Wind Gas Sites</a>
-            <a href="{{ url_for('wind_turbine_leads.list') }}">Wind Leads</a>
-            <a href="{{ url_for('wind_turbine_leads_details.list') }}">Lead Details</a>
+        {% if session.get('firebase_user') %}
+        <div class="app-shell__header-actions">
+            <nav class="app-shell__nav app-shell__nav--primary" aria-label="Primary">
+                <a href="{{ url_for('customers.customer_list') }}">Customers</a>
+                <a href="{{ url_for('field_services.field_service_list') }}">Field Services</a>
+                <a href="{{ url_for('consignment_list.consignment_list') }}">Consignments</a>
+                <a href="{{ url_for('reports.audit_trail_report') }}">Reports</a>
+            </nav>
             <form class="app-shell__logout" method="post" action="{{ url_for('logout') }}">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <button type="submit">Logout</button>
             </form>
-        </nav>
+        </div>
+        {% endif %}
     </header>
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}

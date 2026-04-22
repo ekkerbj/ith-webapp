@@ -3,9 +3,13 @@
 {% block title %}{{ title }} - ITH{% endblock %}
 
 {% block content %}
-<h1>{{ heading }}</h1>
+<section class="hero-panel">
+    <p class="eyebrow">{{ title }}</p>
+    <h1>{{ heading }}</h1>
+    <p>Complete the fields below and save when ready.</p>
+</section>
 
-<form method="post">
+<form method="post" class="form-card">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
     {% for label, name, field_type, required, value in fields %}
     <label for="{{ name }}">{{ label }}</label>
@@ -17,8 +21,9 @@
         {% if required %}required{% endif %}
     >
     {% endfor %}
-    <button type="submit">Save</button>
+    <div class="hero-panel__actions">
+        <button type="submit">Save</button>
+        <a class="button-secondary" href="{{ list_url }}">Cancel</a>
+    </div>
 </form>
-
-<a href="{{ list_url }}">Back to list</a>
 {% endblock %}

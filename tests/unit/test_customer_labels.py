@@ -53,6 +53,20 @@ def test_customer_mailing_labels_route_renders_customer_addresses():
     assert "123 Main St" in html
 
 
+def test_customer_mailing_labels_route_uses_guided_header():
+    app = _create_test_app_with_customers(
+        Customer(customer_name="Acme Corp", card_code="C10001", active=True),
+    )
+    client = app.test_client()
+
+    response = client.get("/customers/labels/mailing?format=single")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Label sheet" in html
+    assert "Print-ready customer labels" in html
+
+
 def test_customer_address_labels_route_renders_multi_label_layout():
     app = _create_test_app_with_customers(
         Customer(customer_name="Acme Corp", card_code="C10001", active=True),

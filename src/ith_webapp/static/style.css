@@ -73,6 +73,14 @@ body {
     z-index: 10;
 }
 
+.app-shell__header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-left: auto;
+    flex-wrap: wrap;
+}
+
 .app-shell__brand {
     display: inline-flex;
     align-items: center;
@@ -119,6 +127,15 @@ body {
     justify-content: flex-end;
 }
 
+.app-shell__nav--primary {
+    gap: 0.45rem;
+}
+
+.app-shell__nav--primary a {
+    background: transparent;
+    border: 1px solid transparent;
+}
+
 .app-shell__nav a {
     display: inline-flex;
     align-items: center;
@@ -142,6 +159,21 @@ body {
     transform: translateY(-1px);
 }
 
+.app-shell__logout button {
+    margin-top: 0;
+    background: var(--surface-alt);
+    color: var(--text);
+    box-shadow: none;
+    border: 1px solid var(--border);
+}
+
+.app-shell__logout button:hover,
+.app-shell__logout button:focus-visible {
+    background: #f4d9d7;
+    color: var(--danger);
+    box-shadow: none;
+}
+
 main {
     width: 100%;
     flex: 1;
@@ -156,6 +188,53 @@ main {
 .app-shell__surface {
     display: grid;
     gap: 1rem;
+}
+
+.hero-panel {
+    display: grid;
+    gap: 0.5rem;
+    padding: 1.5rem;
+    border-radius: 1.25rem;
+    background: linear-gradient(135deg, rgba(15, 76, 129, 0.08), rgba(27, 127, 212, 0.14));
+    border: 1px solid rgba(205, 217, 234, 0.75);
+}
+
+.hero-panel__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.hero-panel__actions a,
+.hero-panel__actions button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hero-panel__actions a {
+    min-height: 2.5rem;
+    padding: 0.45rem 1rem;
+    border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.hero-panel__actions a:hover,
+.hero-panel__actions a:focus-visible {
+    background: #eef5ff;
+}
+
+.eyebrow {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
 }
 
 h1 {
@@ -177,6 +256,30 @@ table,
     border: 1px solid var(--border);
     border-radius: 1rem;
     box-shadow: var(--shadow);
+}
+
+.surface-stack {
+    display: grid;
+    gap: 1rem;
+}
+
+.surface-stack > section,
+.surface-stack > form,
+.surface-stack > table,
+.surface-stack > .card {
+    margin: 0;
+}
+
+.section-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.section-heading p {
+    margin: 0;
+    color: var(--muted);
 }
 
 section,
@@ -289,6 +392,19 @@ button {
         background-color 120ms ease;
 }
 
+.button-secondary {
+    background: var(--surface-alt);
+    color: var(--text);
+    box-shadow: none;
+    border: 1px solid var(--border);
+}
+
+.button-secondary:hover,
+.button-secondary:focus-visible {
+    background: #eef5ff;
+    color: var(--accent);
+}
+
 button:hover,
 button:focus-visible {
     background: linear-gradient(135deg, var(--accent-hover), #1061a2);
@@ -300,9 +416,25 @@ a {
     color: var(--accent);
 }
 
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 3px solid rgba(15, 76, 129, 0.22);
+    outline-offset: 2px;
+}
+
 .pagination {
     display: grid;
     gap: 0.75rem;
+}
+
+.pagination__controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
 }
 
 .pagination nav {
@@ -329,6 +461,12 @@ a {
 @media (max-width: 900px) {
     .app-shell__header {
         align-items: flex-start;
+    }
+
+    .app-shell__header-actions {
+        width: 100%;
+        margin-left: 0;
+        justify-content: space-between;
     }
 
     .app-shell__nav {
@@ -381,5 +519,9 @@ a {
 
     .app-shell__nav {
         width: 100%;
+    }
+
+    .app-shell__header-actions {
+        gap: 0.5rem;
     }
 }

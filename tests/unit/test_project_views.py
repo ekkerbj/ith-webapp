@@ -45,6 +45,26 @@ def test_project_list_renders_project_names():
     assert "Test Project" in html
 
 
+def test_project_list_uses_guided_header_and_action():
+    app = _create_test_app_with_projects(
+        Project(
+            customer_id=1,
+            cardcode="C10001",
+            project_name="Test Project",
+            active=True,
+        )
+    )
+    client = app.test_client()
+
+    response = client.get("/projects/")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Project directory" in html
+    assert "Track customer project work and open the record you need." in html
+    assert "Create project" in html
+
+
 def test_project_detail_renders_project_fields():
     app = _create_test_app_with_projects(
         Project(
@@ -62,6 +82,26 @@ def test_project_detail_renders_project_fields():
     html = response.get_data(as_text=True)
     assert "Test Project" in html
     assert "C10001" in html
+
+
+def test_project_detail_uses_guided_header_and_actions():
+    app = _create_test_app_with_projects(
+        Project(
+            customer_id=1,
+            cardcode="C10001",
+            project_name="Test Project",
+            active=True,
+        )
+    )
+    client = app.test_client()
+
+    response = client.get("/projects/1")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Project record" in html
+    assert "Back to projects" in html
+    assert "Edit project" in html
 
 
 def test_project_detail_returns_404_for_missing_project():
@@ -83,6 +123,19 @@ def test_project_create_form_renders():
     html = response.get_data(as_text=True)
     assert '<form' in html
     assert 'name="project_name"' in html
+
+
+def test_project_create_form_uses_guided_header_and_actions():
+    app = _create_test_app_with_projects()
+    client = app.test_client()
+
+    response = client.get("/projects/new")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "New project" in html
+    assert "Start a project record for a customer." in html
+    assert "Back to projects" in html
 
 
 def test_project_create_saves_and_redirects():

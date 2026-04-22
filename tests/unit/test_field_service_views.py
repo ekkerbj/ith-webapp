@@ -45,6 +45,19 @@ def test_field_service_list_renders_items():
     assert response.status_code == 200
 
 
+def test_field_service_list_uses_guided_header_and_action():
+    app = _create_test_app_with_field_services()
+    client = app.test_client()
+
+    response = client.get("/field-services/")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Field service queue" in html
+    assert "Open the active service visits for this month." in html
+    assert "Create field service" in html
+
+
 def test_field_service_list_filters_by_customer_status_or_id():
     app = create_app(testing=True)
     engine = create_engine("sqlite:///:memory:")
@@ -149,6 +162,19 @@ def test_field_service_detail_renders_fields():
     assert "On-site visit" in html
 
 
+def test_field_service_detail_uses_guided_header_and_actions():
+    app = _create_test_app_with_field_services()
+    client = app.test_client()
+
+    response = client.get("/field-services/1")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "Service record" in html
+    assert "Back to field services" in html
+    assert "Edit service" in html
+
+
 def test_field_service_create_saves_and_redirects():
     app = _create_test_app_with_field_services()
     client = app.test_client()
@@ -165,6 +191,19 @@ def test_field_service_create_saves_and_redirects():
 
     assert response.status_code == 302
     assert "/field-services/" in response.headers["Location"]
+
+
+def test_field_service_create_form_uses_guided_header_and_actions():
+    app = _create_test_app_with_field_services()
+    client = app.test_client()
+
+    response = client.get("/field-services/new")
+
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert "New field service" in html
+    assert "Create a service visit and capture notes in one place." in html
+    assert "Back to field services" in html
 
 
 def test_field_service_edit_updates_and_redirects():

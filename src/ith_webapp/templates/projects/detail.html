@@ -3,22 +3,30 @@
 {% block title %}{{ item.project_name or "Project" }} - ITH{% endblock %}
 
 {% block content %}
-<h1>{{ item.project_name or "Project" }}</h1>
+<section class="hero-panel">
+    <p class="eyebrow">Project record</p>
+    <h1>{{ item.project_name or "Project" }}</h1>
+    <p>{{ item.cardcode or "Project details and workflow status." }}</p>
+    <div class="hero-panel__actions">
+        <a href="{{ back_url or url_for('projects.project_list') }}">Back to projects</a>
+        <a href="{{ url_for('projects.project_edit', project_id=item.project_id) }}">{{ edit_label or "Edit project" }}</a>
+    </div>
+</section>
 
-<table>
-    <tr>
-        <th>Customer ID</th>
-        <td>{{ item.customer_id }}</td>
-    </tr>
-    <tr>
-        <th>Card Code</th>
-        <td>{{ item.cardcode or "" }}</td>
-    </tr>
-    <tr>
-        <th>Active</th>
-        <td>{{ "Yes" if item.active else "No" }}</td>
-    </tr>
-</table>
-
-<a href="{{ url_for('projects.project_list') }}">Back to list</a>
+<div class="surface-stack">
+    <table>
+        <tr>
+            <th>Customer ID</th>
+            <td>{{ item.customer_id }}</td>
+        </tr>
+        <tr>
+            <th>Card Code</th>
+            <td>{{ item.cardcode or "" }}</td>
+        </tr>
+        <tr>
+            <th>Active</th>
+            <td>{{ "Yes" if item.active else "No" }}</td>
+        </tr>
+    </table>
+</div>
 {% endblock %}

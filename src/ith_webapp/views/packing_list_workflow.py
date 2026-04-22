@@ -1,4 +1,4 @@
-from flask import Blueprint, Response, current_app, render_template, render_template_string, request
+from flask import Blueprint, Response, current_app, render_template, render_template_string, request, url_for
 from sqlalchemy import or_
 
 from ith_webapp.models.packing_list import PackingList
@@ -22,7 +22,11 @@ def _render_customer_specific_label(packing_list: PackingList, label_title: str)
         {% extends "base.html" %}
         {% block title %}{{ label_title }} - ITH{% endblock %}
         {% block content %}
-        <h1>{{ label_title }}</h1>
+        <section class="hero-panel">
+          <p class="eyebrow">Label sheet</p>
+          <h1>{{ label_title }}</h1>
+          <p>Print-ready packing list label for the imported workflow.</p>
+        </section>
         <section class="packing-list-label">
           <div class="packing-list-label__barcode">{{ barcode_svg | safe }}</div>
           <dl>
@@ -117,7 +121,10 @@ def packing_list_index():
         return render_template(
             "crud/list.html",
             title="Packing Lists",
-            heading="Packing Lists",
+            heading="Packing list queue",
+            hero_text="Track what is ready to ship and what still needs work.",
+            primary_action_url=url_for("packing_list_workflow.ready_to_ship"),
+            primary_action_label="Review shipping queue",
             columns=columns,
             rows=rows,
             pagination=pagination,
